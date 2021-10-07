@@ -1,12 +1,4 @@
 import praw
-from enum import Enum
-
-class Subreddit_Type(Enum):
-    RELEVANCE = "relevance",
-    HOT = "hot",
-    TOP = "top",
-    NEW = "new",
-    COMMENTS = "comments"
 
 class reddit_client:
     """
