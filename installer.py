@@ -1,6 +1,22 @@
-import os
-import sys
+# WARNING: This project requires pip to install all packages
+import pip
 import platform
+
+pkg_list = [
+    "praw",
+    "google-auth-httplib2",
+    "google-api-python-client",
+    "google-auth-oauthlib",
+    "requests",
+    "argparse",
+    "typing",
+]
+
+def import_or_install(package):
+    try:
+        __import__(package)
+    except ImportError:
+        pip.main(['install', package])   
 
 def getDependencies():
     # Check the current Python Version
@@ -11,35 +27,9 @@ def getDependencies():
 
     # pip3 should be automatically installed with all python versions greater than 3.4
     # see: https://docs.python.org/3/installing/index.html
+    for package in pkg_list:
+        import_or_install(package)
 
-    try:
-        import praw
-    except ImportError(e):
-        print("""
-        Could not find the package praw. Attempting to install via pip3...
-        """)
-        os.system("pip3 install praw")
-
-    try:
-        import requests
-    except ImportError(e):
-        print("""
-        Could not find the package requests. Attempting to install via pip3...
-        """)
-        os.system("pip3 install requests")
-
-    try:
-        import argparse
-    except ImportError(e):
-        print("""
-        Could not find the package argparse. Attempting to install via pip3...
-        """)
-        os.system("pip3 install argparse")
-
-    try:
-        import typing
-    except ImportError(e):
-        print("""
-        Could not find the package typing. Attempting to install via pip3...
-        """)
-        os.system("pip3 install typing")
+def cleanDependencies():
+    for package in pkg_list:
+        pip.main(['uninstall', package])
