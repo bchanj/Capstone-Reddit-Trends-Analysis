@@ -9,7 +9,9 @@ class Sheets():
 
     def __init__(self):
     # If modifying these scopes, delete the file token.json.
-        SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
+        SCOPES = ['https://spreadsheets.google.com/feeds',
+            "https://www.googleapis.com/auth/spreadsheets",
+            'https://www.googleapis.com/auth/drive']
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
@@ -27,4 +29,13 @@ class Sheets():
             with open('token.json', 'w') as token:
                 token.write(creds.to_json())
         
-        service = build('sheets', 'v4', credentials=creds)
+        self.service = build('sheets', 'v4', credentials=creds)
+
+    def create(self, title: str) -> None:
+        spreadsheet = {
+            'properties': {
+                'title': title
+            }
+        }
+        spreadsheet = self.service.spreadsheets().create(body=spreadsheet,
+                                            fields='spreadsheetId').execute()

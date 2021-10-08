@@ -7,6 +7,7 @@ pkg_list = [
     "google-auth-httplib2",
     "google-api-python-client",
     "google-auth-oauthlib",
+    "gspread",
     "requests",
     "argparse",
     "typing",
