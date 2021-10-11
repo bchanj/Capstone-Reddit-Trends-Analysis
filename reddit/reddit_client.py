@@ -1,5 +1,6 @@
 import praw
 
+
 class reddit_client:
     """
     DOCSTRING
@@ -12,4 +13,11 @@ class reddit_client:
             user_agent="testscript",
             username="North-Alternative886",
         )
+
         self.reddit.read_only = True # change if editing
+
+    def find_data(self, name):
+        gd = self.reddit.subreddit(name)
+        for submission in gd.hot(limit=5):
+            print(submission.title)
+
