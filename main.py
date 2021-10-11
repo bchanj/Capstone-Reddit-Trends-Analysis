@@ -3,6 +3,7 @@ installer.getDependencies() # Get dependencies before any imports
 
 import argparse
 from reddit.reddit_client import reddit_client
+from sheets.gsheets_client import Sheets
 
 if __name__ == "__main__":
     """
