@@ -11,6 +11,7 @@ pkg_list = [
     "requests",
     "argparse",
     "typing",
+    "pathlib",
 ]
 
 def import_or_install(package):
