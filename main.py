@@ -11,3 +11,4 @@ if __name__ == "__main__":
     """
     # Parse any flags and arguments here for extracting trends from reddit
     parser = argparse.ArgumentParser()
+    sheet = Sheets()
