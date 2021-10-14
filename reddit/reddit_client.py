@@ -1,6 +1,12 @@
 import praw
 import re
 
+class InvalidDealException(Exception):
+  def __init__(message: str):
+    self.message = message
+    super().__init__(self.message)
+
+
 class reddit_client:
     """
     DOCSTRING
@@ -22,28 +28,23 @@ class reddit_client:
             print(submission.title)
 
 
-    def getDeal():
-        for submission in reddit.subreddit("GameDeals").new(limit=100):
+    def getDeal(subreddit_title: str, limit:int = 100):
+        for submission in reddit.subreddit(subreddit_title).new(limit):
           title = submission.title
-          print('Title : ' + title)
           # for each title, extract certain data using Regular Expressions
           # The template is as follows: [Store Name] Deal Information (Price/percent off)
           # A full example might be: [Humble Store] Psychonauts ($1.99/80% off)
           m = re.match(r"^\[(.+?)\] (.+?) \((.+?)\)", title)
           if m is None:
-            print("!!! TITLE DIDNOT MATCH THE EXPECTED FORMAT !!!")
+            raise InvalidDealException("submission title did not match r/GameDeals format")
           else:
             merchant = m[1]
-            print('Merchant: ' + merchant)
             deal = m[2]
-            print('Deal: ' + deal)
             priceNpercent = m[3]
             m_price = re.search(r"\$\d+(\.\d+)?", priceNpercent)
-            if m_price is not None:
-              print('Price: ' + m_price[0])
+            if m_price is None:
+              raise InvalidDealException("could not derive price from submission")
             m_percent = re.search(r"\d+(\.\d+)?%", priceNpercent)
-            if m_percent is not None:
-              print('Percent off: ' + m_percent[0])
+            if m_percent is None:
+              raise InvalidDealException("could not derive percent off from submission")
             url = submission.url
-            print('url: ' + url)
-          print()
