@@ -1,5 +1,8 @@
 import praw
 import re
+from typing import List
+
+# from reddit.models.deal import Deal
 
 class InvalidDealException(Exception):
   def __init__(message: str):
@@ -28,23 +31,20 @@ class reddit_client:
             print(submission.title)
 
 
-    def getDeal(subreddit_title: str, limit:int = 100):
-        for submission in reddit.subreddit(subreddit_title).new(limit):
-          title = submission.title
-          # for each title, extract certain data using Regular Expressions
-          # The template is as follows: [Store Name] Deal Information (Price/percent off)
-          # A full example might be: [Humble Store] Psychonauts ($1.99/80% off)
-          m = re.match(r"^\[(.+?)\] (.+?) \((.+?)\)", title)
-          if m is None:
-            raise InvalidDealException("submission title did not match r/GameDeals format")
-          else:
-            merchant = m[1]
-            deal = m[2]
-            priceNpercent = m[3]
-            m_price = re.search(r"\$\d+(\.\d+)?", priceNpercent)
-            if m_price is None:
-              raise InvalidDealException("could not derive price from submission")
-            m_percent = re.search(r"\d+(\.\d+)?%", priceNpercent)
-            if m_percent is None:
-              raise InvalidDealException("could not derive percent off from submission")
-            url = submission.url
+    def getDeals(self, subreddit_title: str, limit:int = 1000) -> List[Deal]:
+      deals = []
+      for submission in self.reddit.subreddit(subreddit_title).new(limit=limit):
+        try:
+          # attempt to construct deal with the submission
+          Deal(submission)
+        except Exception as e:
+          # if the deal does not construct successfully continue
+          continue
+        deals += [Deal(submission)]
+      return deals
+
+    def getSuccessRate(self):
+      sample_size: int = 10000
+      successfully_parsed_deals = self.getDeals("GameDeals", sample_size)
+      return len(successfully_parsed_deals)/sample_size
+
