@@ -2,8 +2,7 @@ import praw
 import re
 from enum import Enum
 from typing import List
-
-# from reddit.models.deal import Deal
+from reddit.models.deal import Deal
 
 class InvalidDealException(Exception):
   def __init__(message: str):
@@ -21,6 +20,7 @@ class reddit_client:
     DOCSTRING
     """
     def __init__(self):
+      super().__init__()
       self.DEFAULT_LIMIT=100
       self.reddit = praw.Reddit(
           client_id="5J0BbjbzNZrNzSnZNOwCOQ",
@@ -58,7 +58,6 @@ class reddit_client:
         for submission in gd.hot(limit=5):
             print(submission.title)
 
-
     def getDeals(self, subreddit_title: str, subreddit_type: SubredditType, limit:int = 1000) -> List[Deal]:
       deals = []
       for submission in self.subreddit_function_table[subreddit_type](subreddit_title, limit):
@@ -77,3 +76,8 @@ class reddit_client:
         successfully_parsed_deals = [deal for deal in self.subreddit_function_table[subreddit_type](subreddit_title, sample_size)]
         print(str(subreddit_type) + ": " + str(len(successfully_parsed_deals)/sample_size*100) + "%")
 
+class MUA(reddit_client):
+    pass
+
+def hello(self):
+    print("Hello")
