@@ -70,14 +70,9 @@ class reddit_client:
         deals += [Deal(submission)]
       return deals
 
+
     def getSuccessRate(self, subreddit_title: str):
       sample_size: int = 10000
       for subreddit_type in SubredditType:
         successfully_parsed_deals = [deal for deal in self.subreddit_function_table[subreddit_type](subreddit_title, sample_size)]
         print(str(subreddit_type) + ": " + str(len(successfully_parsed_deals)/sample_size*100) + "%")
-
-class MUA(reddit_client):
-    pass
-
-def hello(self):
-    print("Hello")
