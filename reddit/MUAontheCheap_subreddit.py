@@ -1,12 +1,11 @@
 from reddit.reddit_client import reddit_client
 
-
-
 #Inherited class from reddit_client.py
 class MUAontheCheapDeal(reddit_client):
     pass
     
     def __init__(self):
+        super(MUAontheCheapDeal,self).__init__()
         self.makeupCompanies = {} #Dictonary used to store <company name, list of posts>
         self.redditPosts = [] #Contains all posts read in by file.
 
