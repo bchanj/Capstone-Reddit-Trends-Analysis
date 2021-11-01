@@ -21,3 +21,12 @@ class Deal:
             if self.m_percent is None:
                 raise InvalidDealException("could not derive percent off from submission")
             self.url = submission.url
+
+    # Copy deal into this deal if fields in this deal are null.
+    def copyWith(self, deal: Deal) -> Deal:
+        if self.title is None:
+            self.title = deal.title
+        if self.discount is None:
+            self.discount = deal.discount
+        if self.merchant is None:
+            self.merchant = deal.merchant

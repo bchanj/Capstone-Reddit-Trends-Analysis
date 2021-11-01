@@ -1,18 +1,17 @@
 import praw
 import re
 from enum import Enum
-from typing import List
+from typing import List, Map
 from reddit.models.deal import Deal
 
-class InvalidDealException(Exception):
-  def __init__(message: str):
-    self.message = message
-    super().__init__(self.message)
-
-class SubredditType(Enum):
+class SubredditFeedFilter(Enum):
   HOT = "hot"
   NEW = "new"
   TOP = "top"
+
+class SubredditTarget(Enum):
+  GAMEDEALS = "GameDeals"
+  MUA = "MUAonTheCheap"
 
 
 class reddit_client:
@@ -32,10 +31,16 @@ class reddit_client:
 
       self.reddit.read_only = True # change if editing
 
-      self.subreddit_function_table = {
-        SubredditType.HOT: self.getHotSubmissions,
-        SubredditType.NEW: self.getNewSubmissions,
-        SubredditType.TOP: self.getTopSubmissions,
+      # Map of subreddit types to PRAW function for scraping
+      self.subreddit_function_table: Map[reddit.reddit_client.SubredditFeedFilter, function] = {
+        SubredditFeedFilter.HOT: self.getHotSubmissions,
+        SubredditFeedFilter.NEW: self.getNewSubmissions,
+        SubredditFeedFilter.TOP: self.getTopSubmissions,
+      }
+      
+      # Map subreddit name to rules defined by that subreddit
+      self.subreddit_rules: Map[str, str] = {
+        SubredditTarget.GAMEDEALS: r"^\[(?P<merchant>.+?)\] (?P<title>.+?) \((?P<discount>.+?)\)",
       }
 
     def getHotSubmissions(self, subreddit_title: str, limit:int=None):
@@ -53,26 +58,75 @@ class reddit_client:
         limit = self.DEFAULT_LIMIT
       return self.reddit.subreddit(subreddit_title).top(limit=limit)
 
-    def find_data(self, name):
-        gd = self.reddit.subreddit(name)
-        for submission in gd.hot(limit=5):
-            print(submission.title)
+    # try to parse deal by title based on subreddit rules
+    # before calling for new subreddit, create new entry in subreddit_rules Map with 
+    # with a new SubredditTarget to string (Regex Rules) 
+    # RAISES DoesNotFollowRulesException if unsuccessful
+    def parseSubmissionBytitle(self, 
+                              subreddit_target: SubredditTarget, 
+                              submission: praw.models.Submission) -> Deal:
+      deal: Deal = Deal()
+      m = re.match(self.subreddit_rules[subreddit_target], submission.title)
+      if m is None:
+            raise DoesNotFollowRulesException()
+      else:
+          deal.merchant = m.group("merchant")
+          deal.title = m.group("title")
+          deal.discount = m.group("discount")
+          deal.url = submission.url
+      return deal
 
-    def getDeals(self, subreddit_title: str, subreddit_type: SubredditType, limit:int = 1000) -> List[Deal]:
-      deals = []
-      for submission in self.subreddit_function_table[subreddit_type](subreddit_title, limit):
-        try:
-          # attempt to construct deal with the submission
-          Deal(submission)
-        except Exception as e:
-          # if the deal does not construct successfully continue
-          continue
-        deals += [Deal(submission)]
+    def parseSubmissionByBody(self, submission: praw.models.Submission) -> List[Deal]:
+      deals: List[Deal]  = []
+      return deals
+
+    def parseSubmissionByUrl(self, submission:praw.models.Submission) -> List[Deal]:
+      deals: List[Deal] = []
+      return deals
+
+    def extractDealsFromSubmission(self, submission: praw.models.Submission) -> List[Deal]:
+      deals: List[Deal] = []
+      
+      # attempt to parse the submission by title
+      try:
+        results: List[Deal] = self.parseSubmissionBytitle(submission) # raises DoesNotFollowRulesException 
+        deals.append(results)
+      except:
+        # If we are not successful in parsing by title then we can write to logs
+        pass
+        
+      # attempt to parse the submission body 
+      # look for tables while we are at it
+      try:
+        results: List[Deal] = self.parseSubmissionByBody(submission)
+        deals.append(results)
+      except:
+        pass
+
+      try:
+        results: List[Deal] = self.parseSubmissionUrl(submission)
+        deals.append(results)
+      except:
+        pass
+
+      return deals
+
+    def getDeals(self, 
+                # Needs a target to scrape
+                subreddit_target: SubredditTarget, 
+                # Default to new posts if no override.
+                subreddit_type: SubredditFeedFilter = SubredditFeedFilter.NEW, 
+                # Default to 1000 posts if no override.
+                limit:int = 1000) -> List[Deal]:
+      deals: List[Deal] = []
+      # Gets posts from subreddit_target filtered by subreddit_type limited to limit number of posts.
+      for submission in self.subreddit_function_table[subreddit_type](subreddit_target, limit):
+        deals.append(extractDealsFromSubmission(submission))
       return deals
 
 
     def getSuccessRate(self, subreddit_title: str):
       sample_size: int = 10000
-      for subreddit_type in SubredditType:
+      for subreddit_type in SubredditFeedFilter:
         successfully_parsed_deals = [deal for deal in self.subreddit_function_table[subreddit_type](subreddit_title, sample_size)]
         print(str(subreddit_type) + ": " + str(len(successfully_parsed_deals)/sample_size*100) + "%")
