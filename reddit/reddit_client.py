@@ -62,10 +62,11 @@ class reddit_client:
     # before calling for new subreddit, create new entry in subreddit_rules Map with 
     # with a new SubredditTarget to string (Regex Rules) 
     # RAISES DoesNotFollowRulesException if unsuccessful
-    def parseSubmissionBytitle(self, 
+    def parseSubmissionByTitle(self, 
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Deal:
       deal: Deal = Deal()
+      print(self.subreddit_rules[subreddit_target.value])
       m = re.match(self.subreddit_rules[subreddit_target.value], submission.title)
       if m is None:
             raise DoesNotFollowRulesException()
@@ -84,14 +85,16 @@ class reddit_client:
       deals: List[Deal] = []
       return deals
 
-    def extractDealsFromSubmission(self, submission: praw.models.Submission) -> List[Deal]:
+    def extractDealsFromSubmission(self, 
+                                  subreddit_target: SubredditTarget, 
+                                  submission: praw.models.Submission) -> List[Deal]:
       deals: List[Deal] = []
-      
       # attempt to parse the submission by title
       try:
-        results: List[Deal] = self.parseSubmissionBytitle(submission) # raises DoesNotFollowRulesException 
+        results: List[Deal] = self.parseSubmissionByTitle(subreddit_target, submission) # raises DoesNotFollowRulesException 
         deals.append(results)
       except:
+        print("throws")
         # If we are not successful in parsing by title then we can write to logs
         pass
         
@@ -121,7 +124,7 @@ class reddit_client:
       deals: List[Deal] = []
       # Gets posts from subreddit_target filtered by subreddit_type limited to limit number of posts.
       for submission in self.subreddit_function_table[subreddit_type](subreddit_target.value, limit):
-        deals.append(extractDealsFromSubmission(submission))
+        deals.append(self.extractDealsFromSubmission(subreddit_target, submission))
       return deals
 
     def getSuccessRate(self, subreddit_title: str):
