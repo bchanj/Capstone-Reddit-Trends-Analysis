@@ -1,7 +1,7 @@
 import praw
 import re
 from enum import Enum
-from typing import List, Map
+from typing import List, Mapping
 
 # from reddit.models.deal import Deal
 
@@ -32,14 +32,14 @@ class reddit_client:
       self.reddit.read_only = True # change if editing
 
       # Map of subreddit types to PRAW function for scraping
-      self.subreddit_function_table: Map[reddit.reddit_client.SubredditFeedFilter, function] = {
+      self.subreddit_function_table: Mapping[reddit.reddit_client.SubredditFeedFilter, function] = {
         SubredditFeedFilter.HOT: self.getHotSubmissions,
         SubredditFeedFilter.NEW: self.getNewSubmissions,
         SubredditFeedFilter.TOP: self.getTopSubmissions,
       }
       
       # Map subreddit name to rules defined by that subreddit
-      self.subreddit_rules: Map[str, str] = {
+      self.subreddit_rules: Mappping[str, str] = {
         SubredditTarget.GAMEDEALS: r"^\[(?P<merchant>.+?)\] (?P<title>.+?) \((?P<discount>.+?)\)",
       }
 
@@ -66,7 +66,7 @@ class reddit_client:
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Deal:
       deal: Deal = Deal()
-      m = re.match(self.subreddit_rules[subreddit_target], submission.title)
+      m = re.match(self.subreddit_rules[subreddit_target.value], submission.title)
       if m is None:
             raise DoesNotFollowRulesException()
       else:
@@ -120,7 +120,7 @@ class reddit_client:
                 limit:int = 1000) -> List[Deal]:
       deals: List[Deal] = []
       # Gets posts from subreddit_target filtered by subreddit_type limited to limit number of posts.
-      for submission in self.subreddit_function_table[subreddit_type](subreddit_target, limit):
+      for submission in self.subreddit_function_table[subreddit_type](subreddit_target.value, limit):
         deals.append(extractDealsFromSubmission(submission))
       return deals
 
