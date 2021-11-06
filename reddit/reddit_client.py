@@ -20,7 +20,6 @@ class reddit_client:
     DOCSTRING
     """
     def __init__(self):
-      super().__init__()
       self.DEFAULT_LIMIT=100
       self.reddit = praw.Reddit(
           client_id="5J0BbjbzNZrNzSnZNOwCOQ",
@@ -76,3 +75,8 @@ class reddit_client:
       for subreddit_type in SubredditType:
         successfully_parsed_deals = [deal for deal in self.subreddit_function_table[subreddit_type](subreddit_title, sample_size)]
         print(str(subreddit_type) + ": " + str(len(successfully_parsed_deals)/sample_size*100) + "%")
+
+
+    #DELETE
+    def PostByID(self, id):
+        return self.reddit.submission(id).title
