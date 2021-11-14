@@ -120,13 +120,14 @@ class MUAontheCheapDeal(reddit_client):
         potenName = ""
         successPosts = [()]
         failPosts = [()]
+        skipWords = ["cosmetics", "-usa", "-us", "beauty", "america", ".us", ".usa"]
         i = 0
         for userSubmission in results:
             if "Daily Chat" in userSubmission.title:
                 continue
             postTitle = userSubmission.title
             print("Title: " + postTitle)
-       
+
             #Post Body
             companyUrl = self.FindDomain(userSubmission.selftext.replace("\n", ""))
             if companyUrl != "":
@@ -136,6 +137,9 @@ class MUAontheCheapDeal(reddit_client):
                         if word.lower() in companyUrl:
                             companyUrl = companyUrl.replace(word.lower(), "")
                             companyName += word + " "
+                for word in skipWords: # 
+                    if word in companyUrl: #
+                        companyUrl = companyUrl.replace(word.lower(), "") #            
                 if companyUrl != "":
                     companyName = ""
             print("Body: " + self.FindDomain(userSubmission.selftext.replace("\n", "")))
@@ -149,6 +153,9 @@ class MUAontheCheapDeal(reddit_client):
                         if word.lower() in companyUrl:
                             companyUrl = companyUrl.replace(word.lower(), "")
                             companyName += word + " "
+                for word in skipWords: # 
+                    if word in companyUrl: #
+                        companyUrl = companyUrl.replace(word.lower(), "") #               
                 if companyUrl != "":
                     companyName = ""
             print("Url: " + self.FindDomain(userSubmission.url.replace("\n", "")))
@@ -165,6 +172,9 @@ class MUAontheCheapDeal(reddit_client):
                                 if word.lower() in companyUrl:
                                     companyUrl = companyUrl.replace(word.lower(), "")
                                     companyName += word + " "
+                        for word in skipWords: # 
+                            if word in companyUrl: #
+                                companyUrl = companyUrl.replace(word.lower(), "") #          
                         #if companyUrl != "":
                         #    companyName = ""
                         #print("OP Comment: " + self.FindDomain(userSubmission.url.replace("\n", "")))
@@ -185,6 +195,8 @@ class MUAontheCheapDeal(reddit_client):
         #Parse through failPosts. Compare companyUrl to array of skip words.
         #Add to successPosts if companyUrl is now empty.
 
+        
+
         print("Correct Results: ")
         for captured in successPosts:
             print(captured)
@@ -194,6 +206,9 @@ class MUAontheCheapDeal(reddit_client):
 
         for captured in failPosts:
             print(captured)
+        
+        print("Percent success: ")
+        print((len(successPosts))/((len(successPosts))+(len(failPosts))))
 
         #print("Correct: " + str(len(successPosts)/(len(successPosts)+len(failPosts))))
         #print("Fail: " + str(len(failPosts)/(len(successPosts)+len(failPosts))))
