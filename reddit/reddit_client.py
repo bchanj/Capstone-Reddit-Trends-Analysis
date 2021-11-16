@@ -1,5 +1,6 @@
 import praw
 import re
+import bs4 
 from enum import Enum
 from typing import List, Mapping
 
@@ -13,7 +14,6 @@ class SubredditFeedFilter(Enum):
 class SubredditTarget(Enum):
   GAMEDEALS = "GameDeals"
   MUA = "MUAonTheCheap"
-
 
 class reddit_client:
     """
@@ -39,7 +39,7 @@ class reddit_client:
       }
       
       # Map subreddit name to rules defined by that subreddit
-      self.subreddit_rules: Mappping[str, str] = {
+      self.subreddit_rules: Mappping[SubredditTarget, str] = {
         SubredditTarget.GAMEDEALS: r"^\[(?P<merchant>.+?)\] (?P<title>.+?) \((?P<discount>.+?)\)",
       }
 
@@ -66,10 +66,9 @@ class reddit_client:
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Deal:
       deal: Deal = Deal()
-      print(self.subreddit_rules[subreddit_target.value])
-      m = re.match(self.subreddit_rules[subreddit_target.value], submission.title)
+      m = re.match(self.subreddit_rules[subreddit_target], submission.title)
       if m is None:
-            raise DoesNotFollowRulesException()
+        raise DoesNotFollowRulesException()
       else:
           deal.merchant = m.group("merchant")
           deal.title = m.group("title")
@@ -78,7 +77,19 @@ class reddit_client:
       return deal
 
     def parseSubmissionByBody(self, submission: praw.models.Submission) -> List[Deal]:
-      deals: List[Deal]  = []
+      soup = bs4.BeautifulSoup(submission.selftext_html, features="html.parser")
+      tables = soup.findAll('table')
+      deals: List[Deal] = []
+      rows = []
+      for table in tables:
+        table_rows = table.find_all('tr')
+        for row in table_rows:
+          rows.append(row)
+          td = row.find_all('td')
+          # write code to parse table row here here
+          deals.append(Deal())
+      print("TABLE")
+      print(rows)
       return deals
 
     def parseSubmissionByUrl(self, submission:praw.models.Submission) -> List[Deal]:
@@ -90,29 +101,29 @@ class reddit_client:
                                   submission: praw.models.Submission) -> List[Deal]:
       deals: List[Deal] = []
       # attempt to parse the submission by title
-      try:
-        results: List[Deal] = self.parseSubmissionByTitle(subreddit_target, submission) # raises DoesNotFollowRulesException 
-        deals.append(results)
-      except:
-        print("throws")
-        # If we are not successful in parsing by title then we can write to logs
-        pass
-        
-      # attempt to parse the submission body 
-      # look for tables while we are at it
-      try:
-        results: List[Deal] = self.parseSubmissionByBody(submission)
-        deals.append(results)
-      except:
-        pass
-
-      try:
-        results: List[Deal] = self.parseSubmissionUrl(submission)
-        deals.append(results)
-      except:
-        pass
+      if self.containsTable(submission):
+        # attempt to parse the submission body 
+        # look for tables while we are at it
+        try:
+          results: List[Deal] = self.parseSubmissionByBody(submission)
+          deals.append(results)
+        except:
+          pass
+      else:
+        try:
+          results: List[Deal] = self.parseSubmissionByTitle(subreddit_target, submission) # raises DoesNotFollowRulesException 
+          deals.append(results)
+        except DoesNotFollowRulesException:
+          # If we are not successful in parsing by title then we can write to logs
+          pass
 
       return deals
+
+    def containsTable(self, submission: praw.models.Submission) -> bool:
+      for line in submission.selftext.split('\n'):
+        if re.match(r"(-|:|\|)+", line):
+          return True
+      return False
 
     def getDeals(self, 
                 # Needs a target to scrape
@@ -133,3 +144,5 @@ class reddit_client:
         successfully_parsed_deals = [deal for deal in self.subreddit_function_table[subreddit_type](subreddit_title, sample_size)]
         print(str(subreddit_type) + ": " + str(len(successfully_parsed_deals)/sample_size*100) + "%")
 
+    # def _flatten(self, arr: List) -> List:
+    #   return [element for subarr in arr for element in subarr]
