@@ -1,8 +1,11 @@
 import gspread
 import datetime
-from typing import List
+import os.path
+
+from typing import List, Dict
 from pathlib import Path
 from google.oauth2.service_account import Credentials
+
 from models.deal import Deal
 
 class GSClient():
@@ -16,47 +19,82 @@ class GSClient():
         self._scope: List[str] = ['https://spreadsheets.google.com/feeds',
                                   'https://www.googleapis.com/auth/drive']
         # create Google API Credentials from service_credentials found in parent directory
-        creds = Credentials.from_service_account_file(
-            Path(__file__).parents[0] / "service_credentials.json", scopes=self._scope)
+        creds = None
+        # The file token.json stores the user's access and refresh tokens, and is
+        # created automatically when the authorization flow completes for the first
+        # time.
+        if os.path.exists('service_credentials.json'):
+            creds = Credentials.from_service_account_file(
+                Path(__file__).parents[0] / "service_credentials.json", scopes=self._scope)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+            # Save the credentials for the next run
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
         
-        self.client = gspread.authorize(creds)
+        self.gspread_client = gspread.authorize(creds)
 
-    def createSheet(self, parent_folder: str, title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> str:
+        self.ROW_START = 1
+        self.COL_START = 0
+
+    def createSheet(self, sheet_title: str) -> str:
         """Returns a link to the spreadsheet that is created
 
         Args:
-            parent_folder_ids (str): Link to the parent folder for the spreadsheet. Spreadsheets must have a parent folder.
             title (str, optional): Optional title for the spreadsheet. Defaults to preformatted datetime string for the current day - datetime.datetime.now().strftime("%m-%d-%Y").
 
         Returns:
             str: Link to the created spreadsheet. The link also contains the key for the spreadsheet. It can be parsed.
         """
-        id: str = self.client.create(title)
-        sheet: gspread.models.Spreadsheet = self.client.open_by_key(id)
+        id: str = self.gspread_client.create(sheet_title)
+        sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_key(id)
         for email in self.contributors:
             sheet.share(emails, perm_type='user', role='owner')
-        return id
+        return "https://docs.google.com/spreadsheets/d/%s" % sheet.id
 
-    def createFolder(self, title: str) -> str:
-        pass
-
-    def getSheet(self, parent_folder: str, title: str) -> str:
-        """Get spreadsheet link with parent folder link and spreadsheet title.
+    def createWorksheet(self, sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
+        """Create a new worksheet under parent spreadsheet
 
         Args:
-            parent_folder (str): Link to the parent folder
-            title (str): The title of the spreadsheet.
+            sheet_link (str): Link to the parent spreadsheet
+            wksht_title (str, optional): Title of the worksheet. Defaults to formatted datetime for NOW -> datetime.datetime.now().strftime("%m-%d-%Y").
 
         Returns:
-            str: A link to the spreadsheet found by the title provided.
+            str: A link to the newly created spreadsheet
         """
-        pass
+        sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
+        worksheet = sheet.add_worksheet(title=wksht_title)
 
-    def appendToSheet(self, sheet_link: str, data: List[Deal]) -> None:
+    def appendToSheet(self, data: List[Deal], sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
         """Append new data rows to a sheet.
 
         Args:
             sheet_link (str): A link to the Google Sheet. See -> getSheet()
             data (List[Deal]): A list of data rows to append to the Google spreadsheet.
         """
-        sheet = self.open(id)
+        sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
+        worksheet = sheet.worksheet(wksht_title)
+        # Update/Write headers to the spreadsheet
+        worksheet.delete_row(self.ROW_START)
+        # Enumerate over attributes in Deal object to create header
+        for index, attribute in enumerate(vars(deal).keys()):
+            worksheet.update_cell(self.ROW_START, index, attribute)
+
+        # Find the first available row to write data into:
+        row: int = self.ROW_START
+        while worksheet.row_values(row).empty():
+            row += 1
+        
+        # iterate over all given objects
+        for deal in deals: 
+            # iterate over object properties
+            col: int = self.COL_START
+            for attribute, value in vars(deal):
+                worksheet.update_cell(row, col, value)
+                col += 1
