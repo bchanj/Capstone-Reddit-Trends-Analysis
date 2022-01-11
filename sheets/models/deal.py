@@ -1,8 +1,9 @@
 from typing import List
 
 class Deal():
-    def __init__(self, reddit_submission=""):
-        self.date = "09-09-2021"
+    def __init__(self, date: str, title: str):
+        self.date = None
+        self.title = None
         
     # get all named attributes for this object as a list of str
     def getAttributes() -> List[str]:
