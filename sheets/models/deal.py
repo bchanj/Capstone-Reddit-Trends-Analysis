@@ -1,9 +1,9 @@
 from typing import List
 
 class Deal():
-    def __init__(self, date: str, title: str):
-        self.date = None
-        self.title = None
+    def __init__(self, date: str, title: str, tag: str):
+        self.date = date
+        self.title = title
         
     # get all named attributes for this object as a list of str
     def getAttributes() -> List[str]:

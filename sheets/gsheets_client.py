@@ -71,18 +71,10 @@ class GSClient():
         sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
         worksheet = sheet.worksheet(wksht_title)
         # # Update/Write headers to the spreadsheet
-        # worksheet.delete_rows(self.ROW_START, self.ROW_START)
+        worksheet.delete_rows(self.ROW_START, self.ROW_START)
         # Enumerate over attributes in Deal object to create header
         for index, attribute in enumerate(vars(deals[0]).keys()):
             worksheet.update_cell(self.ROW_START, index + 1, attribute)
         
-        worksheet.append_rows([deal for deal in vars(deals).values()])
-        # # Find the first available row to write data into:
-        # row: int = self.ROW_START
-        # while not worksheet.row_values(row):
-        #     row += 1
-        
-        # # iterate over all given objects
-        # for deal in deals: 
-        #     # iterate over object properties
-        #     worksheet.append_r
+        worksheet.append_rows([list(vars(deal).values()) for deal in deals])
+
