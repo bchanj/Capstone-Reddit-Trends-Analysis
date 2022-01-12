@@ -71,10 +71,44 @@ class GSClient():
         sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
         worksheet = sheet.worksheet(wksht_title)
         # # Update/Write headers to the spreadsheet
-        worksheet.delete_rows(self.ROW_START, self.ROW_START)
+        worksheet.delete_rows(self.ROW_START, self.ROW_START) 
         # Enumerate over attributes in Deal object to create header
         for index, attribute in enumerate(vars(deals[0]).keys()):
             worksheet.update_cell(self.ROW_START, index + 1, attribute)
         
         worksheet.append_rows([list(vars(deal).values()) for deal in deals])
+
+
+    # TEST WITH
+    # [
+    #     Deal(subreddit=="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"),
+    #     Deal(subreddit=="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"),
+    #     Deal(subreddit=="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022"),
+    # ]
+    def dumpDeals(self, deals: List[Deal]):
+        """Batch write a list of deals to Google spreadsheets
+
+        Args:
+            deals (List[Deal]): List of deals ->
+                subreddit attribute for each deal is REQUIRED for successful write 
+        """
+
+        # cache the worksheets to avoid unecessary requests to gspread API
+        # key: subreddit name
+        # value: Sheet value as defined by gspread models
+        worksheetCache: Dict[str, gspread.models.Spreadsheet] = {}
+        for deal in deals:
+            # skip the deal if cached
+            if deal.subreddit in worksheetCache:
+                continue
+            try:
+                worksheetCache[deal.subreddit] = gspread.models.open(deal.subreddit)
+            except:
+                self.createSheet(deal.subreddit)
+            finally:
+                worksheetCache[deal.subreddit] = gspread.models.open(deal.subreddit)
+
+        # Write deals
+        for deal in deals:
+            self.appendToSheet([deal], worksheetCache[deal.subreddit].url, deal.date)
 
