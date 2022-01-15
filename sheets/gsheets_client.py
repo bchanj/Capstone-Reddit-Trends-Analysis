@@ -31,6 +31,23 @@ class GSClient():
         self.ROW_START = 1
         self.COL_START = 1
 
+    def getSheetLink(self, sheet_title) -> str:
+        """Returns a link to a spreadsheet that has already been created
+
+        Args:
+            sheet_title ([type]): Name of the sheet as a string
+
+        Returns:
+            str: Returns the sheet link if it is found else None
+        """
+        try:
+            sheet: gspread.models.Spreadsheet = self.gspread_client.open(sheet_title)
+            return sheet.url
+        except gspread.SpreadsheetNotFound:
+            pass
+        return None
+        
+
     def createSheet(self, sheet_title: str) -> str:
         """Returns a link to the spreadsheet that is created
 
