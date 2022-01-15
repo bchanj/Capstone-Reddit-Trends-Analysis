@@ -35,3 +35,6 @@ def getDependencies():
 def cleanDependencies():
     for package in pkg_list:
         pip.main(['uninstall', package])
+
+if __name__ == "__main__":
+    getDependencies()
