@@ -2,3 +2,4 @@
 **/service_credentials.json
 **/token.json
 **/client_secret.json
+**/__pycache__
