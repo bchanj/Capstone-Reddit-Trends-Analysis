@@ -46,20 +46,17 @@ class GSClient():
 
         Unit Tests:
             >>> client = GSClient()
-            
-            # Test: Sheet is found
-            >>> client.createSheet("Test")
-            >>> client.getSheetLink("Test") == "https://docs.google.com/spreadsheets/d/1eHD322do7J9cpYxyD9EprkcbivEjTzDZpG8LQ7P8z6k/"
+            >>> client.createSheet("Test") != None
             True
-            
-            # Test: Sheet is not found
+            >>> client.getSheetLink("Test") != None
+            True
             >>> client.getSheetLink("SpreadsheetNotFound") == None
             True
         """
         try:
             sheet: gspread.models.Spreadsheet = self.gspread_client.open(sheet_title)
             return sheet.url
-        except gspread.SpreadsheetNotFound:
+        except:
             pass
         return None
 
@@ -74,21 +71,22 @@ class GSClient():
         
         Unit Tests:
             >>> client = GSClient()
-            
-            # Create Sheet
             >>> link = client.createSheet("Test")
             >>> len(link) != 0
             True
-
-            # Create Sheet (Existing Sheet)
             >>> link = client.createSheet("Test")
             >>> len(link) != 0
             True
         """
-        sheet: gspread.models.Spreadsheet = self.gspread_client.create(sheet_title)
-        for email in self.contributors:
-            sheet.share(email, perm_type='user', role='owner')
-        return sheet.url
+        try:
+            sheet: gspread.models.Spreadsheet = self.gspread_client.open(sheet_title)
+        except:
+            sheet: gspread.models.Spreadsheet = self.gspread_client.create(sheet_title)
+            for email in self.contributors:
+                sheet.share(email, perm_type='user', role='owner')
+        finally:
+            sheet: gspread.models.Spreadsheet = self.gspread_client.open(sheet_title)
+            return sheet.url
 
     def createWorksheet(self, sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
         """Create a new worksheet under parent spreadsheet
@@ -102,24 +100,22 @@ class GSClient():
 
         Unit Tests:
             >>> client = GSClient()
-
-            # Create a worksheet
             >>> link = client.createSheet("Test")
             >>> client.createWorksheet(link, "TestWorksheet")
             >>> worksheet_list = client.gspread_client.open_by_url(link).worksheets()
             >>> "TestWorksheet" in [ worksheet.title for worksheet in worksheet_list]
-
-            # Create a worksheet (Existing Worksheet)
+            True
             >>> link = client.createSheet("Test")
             >>> client.createWorksheet(link, "TestWorksheet")
             >>> worksheet_list = client.gspread_client.open_by_url(link).worksheets()
             >>> "TestWorksheet" in [ worksheet.title for worksheet in worksheet_list]
+            True
         """
         sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
         try:
             worksheet = sheet.worksheet(wksht_title)
         except:
-            worksheet = sheet.add_worksheet(title=wksht_title, rows=10, cols=10)
+            worksheet = sheet.add_worksheet(title=wksht_title, rows=0, cols=0)
 
     def appendToSheet(self, deals: List[deal.Deal], sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
         """Append new data rows to a sheet.
@@ -130,24 +126,22 @@ class GSClient():
 
         Unit Tests:
             >>> client = GSClient()
-
-            # Append to spreadsheet
             >>> link = client.createSheet("Test")
             >>> client.createWorksheet(link, "TestWorksheet")
             >>> rows = client.gspread_client.open_by_url(link).worksheet("TestWorksheet").row_count
-            >>> deals = [deal.Deal(subreddit=="r/Gamedeal.Deals", title="50% off Halo Infinite Gear", date="1/2/2022"), deal.Deal(subreddit=="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"), deal.Deal(subreddit=="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
+            >>> deals = [deal.Deal(subreddit="r/Gamedeal.Deals", title="50% off Halo Infinite Gear", date="1/2/2022"),deal.Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"),deal.Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
             >>> client.appendToSheet(deals, link, "TestWorksheet")
             >>> updated_rows = client.gspread_client.open_by_url(link).worksheet("TestWorksheet").row_count
-            >>> rows == updated_rows - len(deals)
+            >>> rows + len(deals) == updated_rows
             True
         """
-        sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
-        worksheet = sheet.worksheet(wksht_title)
-        # # Update/Write headers to the spreadsheet
-        worksheet.delete_rows(self.ROW_START, self.ROW_START) 
+        # sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
+        self.createWorksheet(sheet_link=sheet_link, wksht_title=wksht_title)
+        worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(wksht_title)
+        # Update/Write headers to the spreadsheet
         # Enumerate over attributes in deal.Deal object to create header
         for index, attribute in enumerate(vars(deals[0]).keys()):
-            worksheet.update_cell(self.ROW_START, index + 1, attribute)
+            worksheet.update_cell(self.ROW_START, self.COL_START + index, attribute)
         
         worksheet.append_rows([list(vars(deal).values()) for deal in deals])
 
@@ -162,22 +156,15 @@ class GSClient():
             # Test that a list of deals with different dates are written to the correct spreadsheets
             >>> client = GSClient()
             >>> link = client.createSheet("Test")
-            >>> deals = [deal.Deal(subreddit=="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"), deal.Deal(subreddit=="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"), deal.Deal(subreddit=="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
-            
-            >>> client.createWorksheet(link, "1/2/2022")
-            >>> rc1 = client.gspread_client.open_by_url(link).worksheet("1/2/2022").row_count
-            
-            >>> client.createWorksheet(link, "1/11/2022")
-            >>> rc2 = client.gspread_client.open_by_url(link).worksheet("1/11/2022").row_count
-            
-            >>> self.dumpDeals(deals)
-
-            >>> updated = client.gspread_client.open_by_url(link).worksheet("1/2/2022").row_count
-            >>> rc1 + 1 == updated
+            >>> deals = [deal.Deal(subreddit="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"), deal.Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"), deal.Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
+            >>> row_counts = [ client.gspread_client.open(deal.subreddit).worksheet(deal.date).row_count for deal in deals ]
+            >>> client.dumpDeals(deals)
+            >>> updated_row_counts = [ client.gspread_client.open(deal.subreddit).worksheet(deal.date).row_count for deal in deals ]
+            >>> updated_row_counts[0] == row_counts[0] + 1
             True
-
-            >>> updated = client.gspread_client.open_by_url(link).worksheet("1/11/2022").row_count
-            >>> rc1 + 2 == updated
+            >>> updated_row_counts[1] == row_counts[1] + 1
+            True
+            >>> updated_row_counts[2] == row_counts[2] + 1
             True
         """
 
@@ -190,11 +177,11 @@ class GSClient():
             if deal.subreddit in worksheetCache:
                 continue
             try:
-                worksheetCache[deal.subreddit] = gspread.models.open(deal.subreddit)
+                worksheetCache[deal.subreddit] = self.gspread_client.open(deal.subreddit)
             except:
                 self.createSheet(deal.subreddit)
             finally:
-                worksheetCache[deal.subreddit] = gspread.models.open(deal.subreddit)
+                worksheetCache[deal.subreddit] = self.gspread_client.open(deal.subreddit)
 
         # Write deals
         for deal in deals:
