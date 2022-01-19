@@ -1,5 +1,5 @@
 # WARNING: This project requires pip to install all packages
-import pip
+from pip._internal import main as pipmain
 import platform
 
 pkg_list = [
@@ -18,9 +18,10 @@ def import_or_install(package):
     try:
         __import__(package)
     except ImportError:
-        pip.main(['install', package])   
+        pipmain(['install', package])   
 
 def getDependencies():
+    cleanDependencies()
     # Check the current Python Version
     # PRAW requires Python > 3.6
     assert (int(platform.python_version_tuple()[0]) >= 3 and int(platform.python_version_tuple()[1]) >= 6), """
@@ -34,7 +35,7 @@ def getDependencies():
 
 def cleanDependencies():
     for package in pkg_list:
-        pip.main(['uninstall', package])
+        pipmain(['uninstall', package])
 
 if __name__ == "__main__":
     getDependencies()
