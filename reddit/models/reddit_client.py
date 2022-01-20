@@ -69,6 +69,22 @@ class RedditClient:
     def parseSubmissionByTitle(self, 
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Deal:
+      """[summary]
+
+      Args:
+          subreddit_target (SubredditTarget): [description]
+          submission (praw.models.Submission): [description]
+
+      Raises:
+          DoesNotFollowRulesException: [description]
+
+      Returns:
+          Deal: [description]
+
+      unit tests:
+          >>> 
+
+      """
       deal: Deal = Deal()
       m = re.match(self.subreddit_rules[subreddit_target], submission.title)
       if m is None:
@@ -79,6 +95,49 @@ class RedditClient:
           deal.discount = m.group("discount")
           deal.url = submission.url
       return deal
+
+    def parseTitle(self, title_text: str, subreddit_target: SubredditTarget) -> List[Deal]:
+      """[summary]
+      Args:
+          title_text (str): [description]
+          subreddit_target (SubredditTarget): [description]
+
+      Returns:
+          List[Deal]: [description]
+
+      unit tests:
+          >>> client = RedditClient()
+          >>> title = "[Gamesplanet] Ghosts 'n Goblins Resurrection (50%)" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 1
+          True
+          >>> title = "[Gamesplanet] Ghosts 'n Goblins Resurrection (50%), Beyond Good & Evil (70%), UNO (60%)" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 3
+          True
+          >>> title = "[Gamesplanet] Ghosts 'n Goblins Resurrection (-50%)" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 1
+          True
+          >>> title = "[Gamesplanet] Weekly Deals: Ghosts 'n Goblins Resurrection (-50%), Beyond Good & Evil (-70%), UNO (-60%), Rayman Legends (-75%), Ultimate Marvel vs. Capcom 3 (-76%), Prince of Persia (-80%), Devil May Cry 5 Deluxe + Vergil (-41%), Disney Afternoon Collection (-80%)" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 8
+          True
+          >>> title = "[GMG] Tennis Manager 2021 (£14.00| €16.00 | $16.00 / 60%)" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 1
+          True
+          >>> title = "[GOG] The Darkside Detective (Win/Mac/Linux) (£3.19 / -68% off)" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 1
+          True
+          >>> title = "[GamersGate] THQ Nordic Sale: Quantum Break (-75% | $8.89 / €8.22 / £6.66 w/ code); Sunset Overdrive (-25% | $13.34 / €13.34 / £10.00 w/ code) | Steam | Use code RGAMEDEALS to save 11%" 
+          >>> deals = client.parseTitle(title, SubredditTarget.GAMEDEALS)
+          >>> len(deals) == 2
+          True
+      """
+      
+
 
     def parseSubmissionByBody(self, submission: praw.models.Submission, subreddit_target: SubredditTarget) -> List[Deal]:
       """Looks for a table in praw.models.submission.selftext_html (body) and attempts to
