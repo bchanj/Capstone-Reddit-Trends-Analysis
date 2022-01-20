@@ -12,6 +12,7 @@ pkg_list = [
     "argparse",
     "typing",
     "pathlib",
+    "bs4",
 ]
 
 def import_or_install(package):
