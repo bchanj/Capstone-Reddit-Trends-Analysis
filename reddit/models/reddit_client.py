@@ -3,7 +3,7 @@ import re
 import bs4 
 from enum import Enum
 from typing import List, Dict
-from deal import Deal
+from deal import Deal, GameDeal
 
 class SubredditFeedFilter(Enum):
   HOT = "hot"
@@ -43,6 +43,10 @@ class RedditClient:
         SubredditTarget.GAMEDEALS: r"^\[(?P<merchant>.+?)\] (?P<title>.+?) \((?P<discount>.+?)\)",
       }
 
+      self.subreddit_deal_constructors = {
+        SubredditTarget.GAMEDEALS: GameDeal
+      }
+
     def getHotSubmissions(self, subreddit_title: str, limit:int=None):
       if limit is None:
         limit = self.DEFAULT_LIMIT
@@ -76,7 +80,7 @@ class RedditClient:
           deal.url = submission.url
       return deal
 
-    def parseSubmissionByBody(self, submission: praw.models.Submission) -> List[Deal]:
+    def parseSubmissionByBody(self, submission: praw.models.Submission, subreddit_target: SubredditTarget) -> List[Deal]:
       """Looks for a table in praw.models.submission.selftext_html (body) and attempts to
       parse a list of deals.
 
@@ -86,13 +90,42 @@ class RedditClient:
       Returns:
           List[Deal]: A list of deals that are successfully parsed.
       """
+      return parseTable(self, html=submission.selftext_html, subreddit_target=subreddit_target)
+      
+    def parseTable(self, html: str, subreddit_target: SubredditTarget) -> List[Deal]:
+      """Scans a HTML table and parses it for a list of deals 
+
+      Args:
+          html (str): string of HTML parsable with bs4
+
+      Returns:
+          List[Deal]: a list of successfully parsed Deals
+
+      Unit Tests: 
+        >>> client = RedditClient()
+        >>> html = '<table class="MRH-njmSb5ZTkfb1o4dqv"><thead><tr class="s6JZe6869f81l9E_5G7Q9"><th class="_3TNkDptlyGOiWXvdX_acOB">Game</th><th class="_3TNkDptlyGOiWXvdX_acOB">Sale</th><th class="_3TNkDptlyGOiWXvdX_acOB">USD</th></tr></thead><tbody><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Dungeon of the Endless - Definitive Edition</td><td class="_3DYfYn_cczg1wj_a3hhyV6">80%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$3.99</td></tr><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Endless Legend - Monstrous Tales</td><td class="_3DYfYn_cczg1wj_a3hhyV6">33%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$2.00</td></tr></tbody></table>'
+        >>> deals = client.parseTable(html=html, subreddit_target=SubredditTarget.GAMEDEALS)
+        >>> len(deals) == 2
+        True
+        >>> html = '<table class="MRH-njmSb5ZTkfb1o4dqv"><thead><tr class="s6JZe6869f81l9E_5G7Q9"><th class="_3TNkDptlyGOiWXvdX_acOB">UNKNOWN</th><th class="_3TNkDptlyGOiWXvdX_acOB">Sale</th><th class="_3TNkDptlyGOiWXvdX_acOB">USD</th></tr></thead><tbody><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Dungeon of the Endless - Definitive Edition</td><td class="_3DYfYn_cczg1wj_a3hhyV6">80%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$3.99</td></tr><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Endless Legend - Monstrous Tales</td><td class="_3DYfYn_cczg1wj_a3hhyV6">33%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$2.00</td></tr></tbody></table>'
+        >>> deals = client.parseTable(html=html, subreddit_target=SubredditTarget.GAMEDEALS)
+        >>> len(deals) == 0
+        True
+        >>>
+      """
       deals: List[Deal] = [] # result from parsing all tables
-      soup = bs4.BeautifulSoup(submission.selftext_html, features="html.parser")
+      soup = bs4.BeautifulSoup(html, features="html.parser")
       tables = soup.findAll('table')
       for table in tables:
         headers = [ header.text for header in table.findAll('th')]
         tvalues = [[ cell.text for cell in row.findAll('td')] for row in table.findAll('tr')][1:]
-        
+        for row in tvalues:
+          deal: Deal = self.subreddit_deal_constructors[subreddit_target]()
+          for index, value in enumerate(row):
+            # Use the table headers to look up Deal attribute with synonyms
+            deal.setAttribute(headers[index], value)
+          if deal.isValid():
+            deals.append(deal)
       return deals
 
     def parseSubmissionByUrl(self, submission:praw.models.Submission) -> List[Deal]:
@@ -150,3 +183,7 @@ class RedditClient:
 
     # def _flatten(self, arr: List) -> List:
     #   return [element for subarr in arr for element in subarr]
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
