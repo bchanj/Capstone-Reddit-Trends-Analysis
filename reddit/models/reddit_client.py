@@ -136,7 +136,10 @@ class RedditClient:
           >>> len(deals) == 2
           True
       """
-      
+      dealList = re.split('; |, ', title_text)
+      # Find the retailer and append it to the beginning of each additional deal (any past the first entry)
+
+      return dealList
 
 
     def parseSubmissionByBody(self, submission: praw.models.Submission, subreddit_target: SubredditTarget) -> List[Deal]:
