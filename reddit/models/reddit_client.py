@@ -2,8 +2,8 @@ import praw
 import re
 import bs4 
 from enum import Enum
-from typing import List, Map
-from reddit.models.deal import Deal
+from typing import List, Dict
+from deal import Deal
 
 class SubredditFeedFilter(Enum):
   HOT = "hot"
@@ -14,7 +14,7 @@ class SubredditTarget(Enum):
   GAMEDEALS = "GameDeals"
   MUA = "MUAonTheCheap"
 
-class reddit_client:
+class RedditClient:
     """
     DOCSTRING
     """
@@ -32,14 +32,14 @@ class reddit_client:
       self.reddit.read_only = True # change if editing
 
       # Map of subreddit types to PRAW function for scraping
-      self.subreddit_function_table: Mapping[reddit.reddit_client.SubredditFeedFilter, function] = {
+      self.subreddit_function_table: Dict[reddit.reddit_client.SubredditFeedFilter, function] = {
         SubredditFeedFilter.HOT: self.getHotSubmissions,
         SubredditFeedFilter.NEW: self.getNewSubmissions,
         SubredditFeedFilter.TOP: self.getTopSubmissions,
       }
       
       # Map subreddit name to rules defined by that subreddit
-      self.subreddit_rules: Mappping[SubredditTarget, str] = {
+      self.subreddit_rules: Dict[SubredditTarget, str] = {
         SubredditTarget.GAMEDEALS: r"^\[(?P<merchant>.+?)\] (?P<title>.+?) \((?P<discount>.+?)\)",
       }
 
@@ -77,19 +77,22 @@ class reddit_client:
       return deal
 
     def parseSubmissionByBody(self, submission: praw.models.Submission) -> List[Deal]:
+      """Looks for a table in praw.models.submission.selftext_html (body) and attempts to
+      parse a list of deals.
+
+      Args:
+          submission (praw.models.Submission): A Submission object as defined by the PRAW API
+
+      Returns:
+          List[Deal]: A list of deals that are successfully parsed.
+      """
+      deals: List[Deal] = [] # result from parsing all tables
       soup = bs4.BeautifulSoup(submission.selftext_html, features="html.parser")
       tables = soup.findAll('table')
-      deals: List[Deal] = []
-      rows = []
       for table in tables:
-        table_rows = table.find_all('tr')
-        for row in table_rows:
-          rows.append(row)
-          td = row.find_all('td')
-          # write code to parse table row here here
-          deals.append(Deal())
-      print("TABLE")
-      print(rows)
+        headers = [ header.text for header in table.findAll('th')]
+        tvalues = [[ cell.text for cell in row.findAll('td')] for row in table.findAll('tr')][1:]
+        
       return deals
 
     def parseSubmissionByUrl(self, submission:praw.models.Submission) -> List[Deal]:
