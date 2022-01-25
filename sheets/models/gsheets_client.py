@@ -3,6 +3,7 @@ import datetime
 import os
 import base64
 import json
+import dotenv
 
 from typing import List, Dict
 from pathlib import Path
@@ -28,6 +29,7 @@ class GSClient():
             'https://spreadsheets.google.com/feeds',
             'https://www.googleapis.com/auth/drive']
 
+        dotenv.load_dotenv()
         encrypted_creds: str = os.environ["GSPREAD_CREDS"]
         decoded: bytes = base64.b64decode(encrypted_creds)
         json_dict = json.loads(decoded)
