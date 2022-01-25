@@ -1,18 +1,16 @@
 import re
 import praw
+import datetime
 
 from typing import Dict
 
 class Deal:
-    def __init__(self):
-        self.title = None
-        self.discount = None
-        self.merchant = None
-        self.containsTable = None
-    def __init__(self, title: str=None, merchant: str=None, discount: str=None, price: str=None, synonyms: Dict[str, str]={}):
+    def __init__(self, subreddit: str="", title: str="", merchant: str="", discount: str="", price: str="", date: str=datetime.datetime.now().strftime("%m-%d-%Y"), synonyms: Dict[str, str]={}):
+        self.subreddit = subreddit
         self.title = title
         self.discount = discount
         self.merchant = merchant
+        self.date = date
         self.price = price
         self.synonyms = synonyms
 
@@ -35,7 +33,7 @@ class Deal:
         >>> d.isValid()
         False
         """
-        return self.title != None and ( self.discount != None or self.price != None ) 
+        return self.title != None and self.subreddit != None and ( self.discount != None or self.price != None ) 
 
     def setAttribute(self, synonym: str, value: str) -> None:
         """Set class attribute with regular expression matching.
@@ -92,8 +90,9 @@ class GameDeal(Deal):
     >>> g.price == "$99"
     True
     """
-    def __init__(self, title: str=None, merchant: str=None, discount: str=None, price: str=None):
+    def __init__(self, title: str="", merchant: str="", discount: str="", date: str=datetime.datetime.now().strftime("%m-%d-%Y"), price: str=""):
         super().__init__(
+            subreddit='r/GameDeals',
             title=title, 
             merchant=merchant, 
             discount=discount, 
