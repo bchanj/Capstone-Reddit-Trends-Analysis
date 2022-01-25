@@ -34,23 +34,23 @@ test:doctest:
         - python -m doctest -v sheets/models/deal.py
         - python -m doctest -v sheets/models/gsheets_client.py
 
-run:
-  script:
-    - python setup.py bdist_wheel
-    # an alternative approach is to install and run:
-    - pip install dist/*
-    # run the command here
-  artifacts:
-    paths:
-      - dist/*.whl
+# run:
+#   script:
+#     - python setup.py bdist_wheel
+#     # an alternative approach is to install and run:
+#     - pip install dist/*
+#     # run the command here
+#   artifacts:
+#     paths:
+#       - dist/*.whl
 
-pages:
-  script:
-    - pip install sphinx sphinx-rtd-theme
-    - cd doc ; make html
-    - mv build/html/ ../public/
-  artifacts:
-    paths:
-      - public
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+# pages:
+#   script:
+#     - pip install sphinx sphinx-rtd-theme
+#     - cd doc ; make html
+#     - mv build/html/ ../public/
+#   artifacts:
+#     paths:
+#       - public
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
