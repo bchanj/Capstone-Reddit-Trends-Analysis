@@ -12,6 +12,7 @@ pkg_list = [
     "argparse",
     "typing",
     "pathlib",
+    "python-dotenv"
 ]
 
 def import_or_install(package):
