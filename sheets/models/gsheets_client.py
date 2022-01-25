@@ -132,12 +132,9 @@ class GSClient():
             >>> client = GSClient()
             >>> link = client.createSheet("Test")
             >>> client.createWorksheet(link, "TestWorksheet")
-            >>> rows = client.gspread_client.open_by_url(link).worksheet("TestWorksheet").row_count
             >>> deals = [deal.Deal(subreddit="r/Gamedeal.Deals", title="50% off Halo Infinite Gear", date="1/2/2022"),deal.Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"),deal.Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
             >>> client.appendToSheet(deals, link, "TestWorksheet")
-            >>> updated_rows = client.gspread_client.open_by_url(link).worksheet("TestWorksheet").row_count
-            >>> rows + len(deals) == updated_rows
-            True
+            >>> worksheet = client.gspread_client.open_by_url(link).worksheet("TestWorksheet")
         """
         # sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
         self.createWorksheet(sheet_link=sheet_link, wksht_title=wksht_title)
@@ -161,15 +158,8 @@ class GSClient():
             >>> client = GSClient()
             >>> link = client.createSheet("Test")
             >>> deals = [deal.Deal(subreddit="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"), deal.Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"), deal.Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
-            >>> row_counts = [ client.gspread_client.open(deal.subreddit).worksheet(deal.date).row_count for deal in deals ]
             >>> client.dumpDeals(deals)
-            >>> updated_row_counts = [ client.gspread_client.open(deal.subreddit).worksheet(deal.date).row_count for deal in deals ]
-            >>> updated_row_counts[0] == row_counts[0] + 1
-            True
-            >>> updated_row_counts[1] == row_counts[1] + 1
-            True
-            >>> updated_row_counts[2] == row_counts[2] + 1
-            True
+            >>> worksheets = [ client.gspread_client.open(deal.subreddit).worksheet(deal.date) for deal in deals ]
         """
 
         # cache the worksheets to avoid unecessary requests to gspread API
