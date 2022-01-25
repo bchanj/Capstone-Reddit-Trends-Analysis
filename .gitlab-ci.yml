@@ -28,8 +28,7 @@ before_script:
   - virtualenv venv
   - source venv/bin/activate
 
-test:
-  doctest:
+test:doctest:
     image: python:3.6
     script:
         - python -m doctest -v sheets/models/deal.py
