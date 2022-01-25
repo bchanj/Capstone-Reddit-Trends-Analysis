@@ -1,6 +1,8 @@
 import gspread
 import datetime
-import os.path
+import os
+import base64
+import json
 
 from typing import List, Dict
 from pathlib import Path
@@ -26,11 +28,11 @@ class GSClient():
             'https://spreadsheets.google.com/feeds',
             'https://www.googleapis.com/auth/drive']
 
-        # get parent directory for current file
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        file_name = 'service_credentials.json'
-        full_path = os.path.join(dir_path, file_name)
-        self.gspread_client = gspread.service_account(filename=full_path)
+        encrypted_creds: str = os.environ["GSPREAD_CREDS"]
+        decoded: bytes = base64.b64decode(encrypted_creds)
+        json_dict = json.loads(decoded)
+        
+        self.gspread_client = gspread.service_account_from_dict(json_dict)
 
         self.ROW_START = 1
         self.COL_START = 1
