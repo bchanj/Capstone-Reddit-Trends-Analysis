@@ -23,10 +23,10 @@ class Deal:
             bool: True if deal contains required fields else False
 
         Unit Tests:
-        >>> d = Deal(title="ABC", discount="ABC")
+        >>> d = Deal(subreddit="r/GameDeals", title="ABC", discount="ABC")
         >>> d.isValid()
         True
-        >>> d = Deal(title="ABC", price="ABC")
+        >>> d = Deal(subreddit="r/GameDeals", title="ABC", price="ABC")
         >>> d.isValid()
         True
         >>> d = Deal(merchant="ABC")
