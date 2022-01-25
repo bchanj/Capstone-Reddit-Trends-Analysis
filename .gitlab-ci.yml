@@ -27,6 +27,7 @@ before_script:
   - pip install virtualenv
   - virtualenv venv
   - source venv/bin/activate
+  - python3 installer.py
 
 test:doctest:
     image: python:3.6
