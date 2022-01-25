@@ -33,7 +33,7 @@ class Deal:
         >>> d.isValid()
         False
         """
-        return self.title != None and self.subreddit != None and ( self.discount != None or self.price != None ) 
+        return self.title != "" and self.subreddit != "" and ( self.discount != "" or self.price != "" ) 
 
     def setAttribute(self, synonym: str, value: str) -> None:
         """Set class attribute with regular expression matching.
@@ -47,13 +47,13 @@ class Deal:
         Unit Tests:
         >>> d = Deal(synonyms={"title": [r"^[G|g]ame$"], "discount": [r"^[S|s]ale$"],"price": [r"^[U|u][S|s][D|d]$"],})
         >>> d.setAttribute("404NotFound", 0)
-        >>> d.title == None
+        >>> d.title == ""
         True
-        >>> d.discount == None
+        >>> d.discount == ""
         True
-        >>> d.price == None
+        >>> d.price == ""
         True
-        >>> d.merchant == None
+        >>> d.merchant == ""
         True
         >>> d.setAttribute("Sale", "80%")
         >>> d.discount == "80%"
