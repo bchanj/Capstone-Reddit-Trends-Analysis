@@ -147,7 +147,7 @@ class GSClient():
         for index, attribute in enumerate(vars(deals[0]).keys()):
             worksheet.update_cell(self.ROW_START, self.COL_START + index, attribute)
         
-        worksheet.append_rows([list(vars(deal).values()) for deal in deals])
+        worksheet.append_rows([[ value for value in vars(deal).values() if type(value) == str] for deal in deals])
 
     def dumpDeals(self, deals: List[deal.Deal]):
         """Batch write a list of deals to Google spreadsheets
