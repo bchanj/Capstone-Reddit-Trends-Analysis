@@ -79,19 +79,6 @@ class RedditClient:
           deal.discount = m.group("discount")
           deal.url = submission.url
       return deal
-
-    def parseSubmissionByBody(self, submission: praw.models.Submission, subreddit_target: SubredditTarget) -> List[Deal]:
-      """Looks for a table in praw.models.submission.selftext_html (body) and attempts to
-      parse a list of deals.
-
-      Args:
-          submission (praw.models.Submission): A Submission object as defined by the PRAW API
-
-      Returns:
-          List[Deal]: A list of deals that are successfully parsed.
-      """
-      return parseTable(self, html=submission.selftext_html, subreddit_target=subreddit_target)
-      
     def parseTable(self, html: str, subreddit_target: SubredditTarget) -> List[Deal]:
       """Scans a HTML table and parses it for a list of deals 
 
@@ -127,6 +114,19 @@ class RedditClient:
           if deal.isValid():
             deals.append(deal)
       return deals
+    def parseSubmissionByBody(self, submission: praw.models.Submission, subreddit_target: SubredditTarget) -> List[Deal]:
+      """Looks for a table in praw.models.submission.selftext_html (body) and attempts to
+      parse a list of deals.
+
+      Args:
+          submission (praw.models.Submission): A Submission object as defined by the PRAW API
+
+      Returns:
+          List[Deal]: A list of deals that are successfully parsed.
+      """
+      return parseTable(self, html=submission.selftext_html, subreddit_target=subreddit_target)
+      
+
 
     def parseSubmissionByUrl(self, submission:praw.models.Submission) -> List[Deal]:
       deals: List[Deal] = []

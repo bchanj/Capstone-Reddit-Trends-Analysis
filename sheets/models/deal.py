@@ -15,7 +15,9 @@ class Deal():
         self.date = datetime.datetime.now().strftime("%m-%d-%Y") if date is None else date
         
         self.title = title
-        
+
+    """ 
     # get all named attributes for this object as a list of str
     def getAttributes() -> List[str]:
         [attr for attr in c.__dict__.keys() if attr[:1] != '_']
+    """
