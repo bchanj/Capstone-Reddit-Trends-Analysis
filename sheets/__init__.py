@@ -7,14 +7,9 @@ import azure.functions as func
 from pathlib import Path
 from os.path import exists
 import glob
+import json
 from .models import gsheets_client
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-filex = glob.glob(dir_path + '/**/*', recursive=True)
-files = ""
-for x in filex:
-    files += x + "\n"
-print(files)
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
     function = req.params.get('function')
@@ -29,31 +24,34 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         sheet = gsheets_client.GSClient()
         sheet_title = req.params.get('sheet_title')
         response = sheet.getSheetLink(sheet_title)
-        if response:
-            return func.HttpResponse(response)
-        else:
-            return func.HttpResponse("Unable to retrieve sheet link!")
+        jsonObject = {"link" : response}
+        return func.HttpResponse(
+            json.dumps(jsonObject),
+            mimetype="application/json"
+        )
 
     elif function == "createSheet":
         sheet = gsheets_client.GSClient()
         sheet_title = req.params.get('sheet_title')
         response = sheet.createSheet(sheet_title)
-        if response:
-            return func.HttpResponse(response)
-        else:
-            return func.HttpResponse("Unable to create Sheet!")
+        jsonObject = {"link" : response}
+        return func.HttpResponse(
+            json.dumps(jsonObject),
+            mimetype="application/json"
+        )
 
     elif function == "createWorksheet":
         sheet = gsheets_client.GSClient()
         sheet_link = req.params.get('sheet_link')
         wksht_title = req.params.get('wksht_title')
         response = sheet.createWorksheet(sheet_link, wksht_title)
-        
+
         #Does not work yet, GSheet function needs to return a response 
-        if response:
-            return func.HttpResponse(response)
-        else:
-            return func.HttpResponse("Unable to create Worksheet!")
+        jsonObject = {"link" : response}
+        return func.HttpResponse(
+            json.dumps(jsonObject),
+            mimetype="application/json"
+        )
 
     elif function == "appendToSheet":
         sheet = gsheets_client.GSClient()
@@ -62,10 +60,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         response = sheet.appendToSheet(sheet_link, data)
 
         #Does not work yet, GSheet function needs to return a response 
-        if response:
-            return func.HttpResponse(response)
-        else:
-            return func.HttpResponse("Unable to append to sheet!")
+        jsonObject = {"link" : response}
+        return func.HttpResponse(
+            json.dumps(jsonObject),
+            mimetype="application/json"
+        )
 
     elif function == "dumpDeals":
         sheet = gsheets_client.GSClient()
@@ -73,13 +72,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         response = sheet.dumpDeals(deals)
 
         #Does not work yet, GSheet function needs to return a response 
-        if response:
-            return func.HttpResponse(response)
-        else:
-            return func.HttpResponse("Unable to dump deals to sheet!")
+        jsonObject = {"link" : response}
+        return func.HttpResponse(
+            json.dumps(jsonObject),
+            mimetype="application/json"
+        )
     
     else:
+        jsonObject = {"link" : "The Sheets Function works but wrong parameters have been passed!"}
         return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
+            json.dumps(jsonObject),
+            mimetype="application/json"
         )
