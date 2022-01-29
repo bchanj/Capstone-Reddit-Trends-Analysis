@@ -14,6 +14,7 @@ pkg_list = [
     "pathlib",
     "python-dotenv",
     "colorama"
+    "bs4",
 ]
 
 def import_or_install(package):
