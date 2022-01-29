@@ -33,14 +33,16 @@ git push -uf origin main
 
 ## Test and Deploy
 
-Use the built-in continuous integration in GitLab.
+#### CI Walkthrough
 
-- [ ] [Get started with GitLab CI/CD](https://gitlab.com/-/experiment/new_project_readme_content:6653321e23e5837c2d9649d3b5017584?https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://gitlab.com/-/experiment/new_project_readme_content:6653321e23e5837c2d9649d3b5017584?https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://gitlab.com/-/experiment/new_project_readme_content:6653321e23e5837c2d9649d3b5017584?https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://gitlab.com/-/experiment/new_project_readme_content:6653321e23e5837c2d9649d3b5017584?https://docs.gitlab.com/ee/user/clusters/agent/)
+Use [doctests](https://docs.python.org/3/library/doctest.html) as your main framework for unit testing
 
-***
+##### Adding a new file:
+- Create __main__ to test functions ([Example](https://gitlab.com/cs-22.15-reddit-and-google-trends-analysis/reddit-and-google-trends-analysis/-/blob/main/sheets/models/gsheets_client.py#L184))
+
+###### Adding a new package:
+- Register packagename in [test.py](https://gitlab.com/cs-22.15-reddit-and-google-trends-analysis/reddit-and-google-trends-analysis/-/blob/main/test.py#L12)
+
 
 # Editing this README
 
