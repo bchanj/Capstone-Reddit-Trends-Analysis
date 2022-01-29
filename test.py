@@ -1,8 +1,4 @@
 if __name__ == '__main__':
-
-    import installer
-    installer.getDependencies()
-
     import os
     import subprocess
     import doctest

@@ -13,7 +13,7 @@ pkg_list = [
     "typing",
     "pathlib",
     "python-dotenv",
-    "colorama"
+    "colorama",
     "bs4",
 ]
 
