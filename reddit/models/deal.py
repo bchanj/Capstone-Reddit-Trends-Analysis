@@ -1,13 +1,16 @@
 import re
 import praw
+import datetime
 
 from typing import Dict
 
 class Deal:
-    def __init__(self, title: str=None, merchant: str=None, discount: str=None, price: str=None, synonyms: Dict[str, str]={}):
+    def __init__(self, subreddit: str="", title: str="", merchant: str="", discount: str="", price: str="", date: str=datetime.datetime.now().strftime("%m-%d-%Y"), synonyms: Dict[str, str]={}):
+        self.subreddit = subreddit
         self.title = title
         self.discount = discount
         self.merchant = merchant
+        self.date = date
         self.price = price
         self.synonyms = synonyms
 
@@ -20,17 +23,17 @@ class Deal:
             bool: True if deal contains required fields else False
 
         Unit Tests:
-        >>> d = Deal(title="ABC", discount="ABC")
+        >>> d = Deal(subreddit="r/GameDeals", title="ABC", discount="ABC")
         >>> d.isValid()
         True
-        >>> d = Deal(title="ABC", price="ABC")
+        >>> d = Deal(subreddit="r/GameDeals", title="ABC", price="ABC")
         >>> d.isValid()
         True
         >>> d = Deal(merchant="ABC")
         >>> d.isValid()
         False
         """
-        return self.title != None and ( self.discount != None or self.price != None ) 
+        return self.title != "" and self.subreddit != "" and ( self.discount != "" or self.price != "" ) 
 
     def setAttribute(self, synonym: str, value: str) -> None:
         """Set class attribute with regular expression matching.
@@ -44,13 +47,13 @@ class Deal:
         Unit Tests:
         >>> d = Deal(synonyms={"title": [r"^[G|g]ame$"], "discount": [r"^[S|s]ale$"],"price": [r"^[U|u][S|s][D|d]$"],})
         >>> d.setAttribute("404NotFound", 0)
-        >>> d.title == None
+        >>> d.title == ""
         True
-        >>> d.discount == None
+        >>> d.discount == ""
         True
-        >>> d.price == None
+        >>> d.price == ""
         True
-        >>> d.merchant == None
+        >>> d.merchant == ""
         True
         >>> d.setAttribute("Sale", "80%")
         >>> d.discount == "80%"
@@ -87,8 +90,9 @@ class GameDeal(Deal):
     >>> g.price == "$99"
     True
     """
-    def __init__(self, title: str=None, merchant: str=None, discount: str=None, price: str=None):
+    def __init__(self, title: str="", merchant: str="", discount: str="", date: str=datetime.datetime.now().strftime("%m-%d-%Y"), price: str=""):
         super().__init__(
+            subreddit='r/GameDeals',
             title=title, 
             merchant=merchant, 
             discount=discount, 
