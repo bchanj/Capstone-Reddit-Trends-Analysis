@@ -1,7 +1,7 @@
-from reddit.reddit_client import reddit_client
+from models.reddit_client import RedditClient
 
 #Inherited class from reddit_client.py
-class MUAontheCheapDeal(reddit_client):
+class MUAontheCheapDeal(RedditClient):
     pass
     
     def __init__(self):
