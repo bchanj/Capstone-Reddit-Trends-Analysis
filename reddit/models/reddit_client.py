@@ -1,8 +1,12 @@
 import praw
 import re
 import bs4 
+import sys
+import os
+
 from enum import Enum
 from typing import List, Dict
+sys.path.append(os.path.dirname(__file__))
 from deal import Deal, GameDeal
 
 class SubredditFeedFilter(Enum):

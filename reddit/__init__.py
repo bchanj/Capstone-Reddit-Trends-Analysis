@@ -10,7 +10,8 @@ from unittest import result
 import azure.functions as func
 from pathlib import Path
 from os.path import exists
-from .models import reddit_client
+sys.path.append(os.path.dirname(__file__))
+from models import reddit_client
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
