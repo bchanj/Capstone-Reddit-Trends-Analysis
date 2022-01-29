@@ -12,7 +12,8 @@ pkg_list = [
     "argparse",
     "typing",
     "pathlib",
-    "python-dotenv"
+    "python-dotenv",
+    "colorama"
 ]
 
 def import_or_install(package):
@@ -22,7 +23,6 @@ def import_or_install(package):
         pipmain(['install', package])   
 
 def getDependencies():
-    cleanDependencies()
     # Check the current Python Version
     # PRAW requires Python > 3.6
     assert (int(platform.python_version_tuple()[0]) >= 3 and int(platform.python_version_tuple()[1]) >= 6), """
