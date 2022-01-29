@@ -30,12 +30,13 @@ if __name__ == '__main__':
 RUN: Running tests for: {os.path.join(root, file)}""")
                     file_path = os.path.join(root, file)
                     try:
-                        subprocess.run(['python3', file_path], check = True)
+                        result = subprocess.run(['python3', file_path], check = True, shell=True, capture_output=True)
+                        if result.stderr:
+                            raise subprocess.CalledProcessError(returncode = result.returncode, cmd = result.args, stderr = result.stderr)
                     except subprocess.CalledProcessError as e:
                         failures += 1
-                        print("Tests Failed")
                         print(Fore.RED + f"""FAILURE: {file}, Path: {file_path}.
-Here was the error {e}""")
+Here was the error {e.stderr.decode('utf-8')}""")
                     else:
                         successful += 1
                         print(Fore.GREEN + f"""SUCCESS: Tests for {file} succeeded.""")
@@ -47,4 +48,4 @@ Here was the error {e}""")
     print(Fore.WHITE)
 
     if (failures > 0):
-        raise Exception(f"Test Pass Failed: {failures} tests failed")
+        raise Exception(Fore.RED + f"{failures} tests failed" + Fore.WHITE)
