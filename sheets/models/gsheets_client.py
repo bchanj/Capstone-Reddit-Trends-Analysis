@@ -4,7 +4,7 @@ import os
 import base64
 import json
 import dotenv
-
+import sys
 from typing import List, Dict
 from pathlib import Path
 from google.auth.transport.requests import Request
@@ -12,7 +12,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
+sys.path.append(os.path.dirname(__file__))
 import deal
 
 class GSClient():
