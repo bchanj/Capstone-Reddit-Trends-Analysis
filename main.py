@@ -3,9 +3,9 @@ import os
 installer.getDependencies() # Get dependencies before any imports
 
 import argparse
-from reddit.reddit_client import reddit_client
+from reddit.models.reddit_client import RedditClient
 from reddit.MUAontheCheap_subreddit import MUAontheCheapDeal
-from sheets.gsheets_client import GSClient
+from sheets.models.gsheets_client import GSClient
 
 if __name__ == "__main__":
     """
