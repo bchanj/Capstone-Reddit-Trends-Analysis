@@ -13,3 +13,4 @@ argparse
 typing
 pathlib
 bs4
+python-dotenv
