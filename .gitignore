@@ -4,3 +4,5 @@
 **/client_secret.json
 **/__pycache__
 **.env
+.python_packages
+.venv
