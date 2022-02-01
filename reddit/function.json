@@ -1,5 +1,5 @@
 {
-  "scriptFile": "__init__.py",
+  "scriptFile": "RedditAzureFunction.py",
   "bindings": [
     {
       "authLevel": "anonymous",
