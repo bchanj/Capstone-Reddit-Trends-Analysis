@@ -1,15 +1,15 @@
-from cgi import test
-from importlib.resources import path
-import logging
 import os
 import sys
-import azure.functions as func
-from pathlib import Path
-from os.path import exists
-import glob
-import json
 sys.path.append(os.path.dirname(__file__))
 from models import gsheets_client
+from cgi import test
+from importlib.resources import path
+from os.path import exists
+from pathlib import Path
+import azure.functions as func
+import glob
+import json
+import logging
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
