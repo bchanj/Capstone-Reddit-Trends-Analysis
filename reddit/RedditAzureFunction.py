@@ -1,17 +1,21 @@
-from cgi import test
-import http
-from importlib.resources import path
-import logging
-import os
 import sys
-import glob
-import json
+import os
+sys.path.append(os.path.dirname(__file__))
+
+# imports alphabetically sorted
+from cgi import test
+from importlib.resources import path
+from models import reddit_client
+from os.path import exists
+from pathlib import Path
 from unittest import result
 import azure.functions as func
-from pathlib import Path
-from os.path import exists
-sys.path.append(os.path.dirname(__file__))
-from models import reddit_client
+import glob
+import http
+import json
+import logging
+
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
