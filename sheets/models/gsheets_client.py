@@ -15,6 +15,7 @@ from googleapiclient.errors import HttpError
 
 import deal
 
+
 class GSClient():
     def __init__(self):
         self.contributors: List[str] = [
@@ -33,7 +34,7 @@ class GSClient():
         encrypted_creds: str = os.environ["GSPREAD_CREDS"]
         decoded: bytes = base64.b64decode(encrypted_creds)
         json_dict = json.loads(decoded)
-        
+
         self.gspread_client = gspread.service_account_from_dict(json_dict)
 
         self.ROW_START = 1
@@ -92,7 +93,7 @@ class GSClient():
             sheet: gspread.models.Spreadsheet = self.gspread_client.open(sheet_title)
             return sheet.url
 
-    def createWorksheet(self, sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
+    def createWorksheet(self, sheet_link: str, wksht_title: str = datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
         """Create a new worksheet under parent spreadsheet
 
         Args:
@@ -121,7 +122,8 @@ class GSClient():
         except:
             worksheet = sheet.add_worksheet(title=wksht_title, rows=0, cols=0)
 
-    def appendToSheet(self, deals: List[deal.Deal], sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
+    def appendToSheet(self, deals: List[deal.Deal], sheet_link: str,
+                      wksht_title: str = datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
         """Append new data rows to a sheet.
 
         Args:
@@ -138,13 +140,14 @@ class GSClient():
         """
         # sheet: gspread.models.Spreadsheet = self.gspread_client.open_by_url(sheet_link)
         self.createWorksheet(sheet_link=sheet_link, wksht_title=wksht_title)
-        worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(wksht_title)
+        worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(
+            wksht_title)
         # Update/Write headers to the spreadsheet
         # Enumerate over attributes in deal.Deal object to create header
         for index, attribute in enumerate(vars(deals[0]).keys()):
             worksheet.update_cell(self.ROW_START, self.COL_START + index, attribute)
-        
-        worksheet.append_rows([[ value for value in vars(deal).values() if type(value) == str] for deal in deals])
+
+        worksheet.append_rows([[value for value in vars(deal).values() if type(value) == str] for deal in deals])
 
     def dumpDeals(self, deals: List[deal.Deal]):
         """Batch write a list of deals to Google spreadsheets
@@ -181,7 +184,54 @@ class GSClient():
         for deal in deals:
             self.appendToSheet([deal], worksheetCache[deal.subreddit].url, deal.date)
 
+    def readSheet(self, sheet_link: str, wksht_title: str = datetime.datetime.now().strftime("%m-%d-%Y")):
+        """Reads data from a single sheet to create an HTML table
+
+        Args:
+            sheet_link (str): A link to the Google Sheet. See -> getSheet()
+            wksht_title (str): Title of the worksheet. Defaults to formatted datetime for NOW -> datetime.datetime.now().strftime("%m-%d-%Y").
+
+        Unit Tests: TODO
+            # Test that checks the dictionaries and lists are populated correctly
+
+        """
+        worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(
+            wksht_title)
+        # key is column header, list is cells under header
+        sheetDict = {
+            # title
+            worksheet.get('A1').first(): worksheet.col_values(2),
+            # discount
+            worksheet.get('B1').first(): worksheet.col_values(2),
+            # price
+            worksheet.get('C1').first(): worksheet.col_values(2)}
+        # TODO should I just call createTable() directly?
+        return sheetDict
+
+    def createTable(self, sheetDict):
+        """Creates an HTML table template
+        TODO at the moment this opens a file and dumps the table code to be copy-paste; will likely need pyppeteer to dump table into email client
+
+        Args:
+            sheetDict (dict): A dictionary with the name of the table column as the key, and a list for the table cells
+
+        Unit Tests: TODO
+            # Test that a list of deals with different dates are written to the correct spreadsheets
+
+        """
+        data = ""
+        for k, v in sheetDict.items():
+            data += "<tr>"
+            data += "<td>" + k + "</td>"
+            if isinstance(v, list):
+                for value in v:
+                    data += "<td>" + value + "</td>"
+            data += "</tr>"
+        table = open("table_template.html").read().format(table_contents=data)
+        return table
+
+
 if __name__ == "__main__":
     import doctest
-    doctest.testmod()
 
+    doctest.testmod()
