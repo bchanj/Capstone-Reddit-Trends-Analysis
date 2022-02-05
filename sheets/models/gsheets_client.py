@@ -195,17 +195,26 @@ class GSClient():
             # Test that checks the dictionaries and lists are populated correctly
 
         """
-        worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(
-            wksht_title)
+        worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(wksht_title)
+        sheetDict = {}
         # key is column header, list is cells under header
-        sheetDict = {
-            # title
-            worksheet.get('A1').first(): worksheet.col_values(2),
-            # discount
-            worksheet.get('B1').first(): worksheet.col_values(2),
-            # price
-            worksheet.get('C1').first(): worksheet.col_values(2)}
-        # TODO should I just call createTable() directly?
+        for k in range(100):
+            while worksheet.col_values(k) is not None:
+                col = worksheet.col_values(k)
+                sheetDict[col(0)] = col.pop()
+        # key is column header, list is cells under header
+        return sheetDict
+
+    def filterSheetDictionary(self, sheetDict):
+        """Filters the dictionary based on keyword
+
+        Args:
+            sheetDict (dict): A dictionary with the name of the table column as the key, and a list for the table cells
+
+        Unit Tests: TODO
+            # Test that checks the dictionary was filtered correctly
+
+        """
         return sheetDict
 
     def createTable(self, sheetDict):
@@ -216,13 +225,13 @@ class GSClient():
             sheetDict (dict): A dictionary with the name of the table column as the key, and a list for the table cells
 
         Unit Tests: TODO
-            # Test that a list of deals with different dates are written to the correct spreadsheets
+            # Test that a table is created with the correct information inserted
 
         """
         data = ""
         for k, v in sheetDict.items():
             data += "<tr>"
-            data += "<td>" + k + "</td>"
+            data += "<th>" + k + "</th>"
             if isinstance(v, list):
                 for value in v:
                     data += "<td>" + value + "</td>"
