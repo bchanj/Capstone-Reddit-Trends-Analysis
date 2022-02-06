@@ -1,8 +1,23 @@
 import re
 import praw
 import datetime
-
+from enum import Enum
 from typing import List,Dict
+
+# We turn our objects into dictionaries before we push to Cosmos DB.
+# These are the keys that we use in these dictionaries.
+class DictionaryKeys(Enum):
+  TITLE = "title"
+  MERCHANT = "merchant"
+  DISCOUNT = "discount"
+  PRICE = "usd"
+  PRICE_EUR = "eur"
+  PRICE_GBP = "gbp"
+  DATE = "date"
+  ID = "id"
+  URL = "url"
+  SUBREDDIT = "subreddit"
+  DEALS = "deals"
 
 class Deal:
     def __init__(self,
@@ -92,6 +107,37 @@ class Deal:
             if any([ re.compile(regex).match(synonym) for regex in synonym_list ]):
                 setattr(self, attribute, value)
                 break
+
+    def getCosmosDBObject(self) -> dict:
+        """Cosmos DB API expects dictionaries.
+
+        Unit Tests:
+        >>> d = Deal()
+        >>> d.title = "My Title"
+        >>> d.price = "$55"
+        >>> d.discount = "20%"
+        >>> d.getCosmosDBObject()
+        {'title': 'My Title', 'discount': '20%', 'usd': '$55'}
+
+        >>> d = Deal()
+        >>> d.title = "ThisIsAVeryLongTitle"
+        >>> d.price_eur = "€20"
+        >>> d.discount = "60%"
+        >>> d.getCosmosDBObject()
+        {'title': 'ThisIsAVeryLongTitle', 'discount': '60%', 'eur': '€20'}
+        """
+        myDict = {}
+        myDict[DictionaryKeys.TITLE.value] = self.title
+        if self.discount != '':
+            myDict[DictionaryKeys.DISCOUNT.value] = self.discount
+        if self.price != '':
+            myDict[DictionaryKeys.PRICE.value] = self.price
+        if self.price_eur != '':
+            myDict[DictionaryKeys.PRICE_EUR.value] = self.price_eur
+        if self.price_gbp != '':
+            myDict[DictionaryKeys.PRICE_GBP.value] = self.price_gbp
+        return myDict
+
     # Override of str method of our deal object, I need this for the unit tests of Bundle class.
     def __str__(self):
         return self.title
@@ -208,6 +254,51 @@ class Bundle:
         self.url=url
         self.deals=deals
 
+    def getCosmosDBObject(self) -> dict:
+        """Cosmos DB API expects dictionaries.
+
+        Unit Tests:
+        >>> d1 = Deal()
+        >>> d1.title = "My Title"
+        >>> d1.price = "$55"
+        >>> d1.discount = "20%"
+        >>> d2 = Deal()
+        >>> d2.title = "ThisIsAVeryLongTitle"
+        >>> d2.price_eur = "€20"
+        >>> d2.discount = "60%"
+        >>> b = Bundle()
+        >>> b.id = "abc123"
+        >>> b.date = "1-30-2022"
+        >>> b.merchant = "barancompany"
+        >>> b.title = "barangame"
+        >>> b.subreddit = "breddit"
+        >>> b.url = "barangames.com"
+        >>> b.discount = "up to 50%"
+        >>> b.deals = [d1, d2]
+        >>> b.getCosmosDBObject()
+        {'id': 'abc123', 'date': '1-30-2022', 'merchant': 'barancompany', 'title': 'barangame', 'subreddit': 'breddit', 'url': 'barangames.com', 'discount': 'up to 50%', 'deals': [{'title': 'My Title', 'discount': '20%', 'usd': '$55'}, {'title': 'ThisIsAVeryLongTitle', 'discount': '60%', 'eur': '€20'}]}
+        """
+        myDict = {}
+        if self.id != '':
+            myDict[DictionaryKeys.ID.value] = self.id
+        if self.date != '':
+            myDict[DictionaryKeys.DATE.value] = self.date
+        if self.merchant != '':
+            myDict[DictionaryKeys.MERCHANT.value] = self.merchant
+        if self.title != '':
+            myDict[DictionaryKeys.TITLE.value] = self.title
+        if self.subreddit != '':
+            myDict[DictionaryKeys.SUBREDDIT.value] = self.subreddit
+        if self.url != '':
+            myDict[DictionaryKeys.URL.value] = self.url
+        if self.discount != '':
+            myDict[DictionaryKeys.DISCOUNT.value] = self.discount
+        dealsList = []
+        for deal in self.deals:
+            dealDict = deal.getCosmosDBObject()
+            dealsList.append(dealDict)
+        myDict[DictionaryKeys.DEALS.value] = dealsList
+        return myDict
 
 if __name__ == "__main__":
     import doctest
