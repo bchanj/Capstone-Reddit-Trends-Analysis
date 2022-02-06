@@ -310,8 +310,8 @@ class RedditClient:
       self.getDeals(subreddit_target, SubredditFeedFilter.TOP, sample_size, True, display_errors)
       # Report success rate for HOT submissios
       self.getDeals(subreddit_target, SubredditFeedFilter.HOT, sample_size, True, display_errors)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    client = RedditClient()
-    client.getSuccessRate(SubredditTarget.GAMEDEALS, 500, True)
+    
