@@ -19,8 +19,10 @@ import logging
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
+    reddit = reddit_client.RedditClient()
     function = req.params.get('function')
     jsonObject = {}
+
     if not function:
         try:
             req_body = req.get_json()
@@ -30,7 +32,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             function = req_body.get('function')
 
     if function == "getHotSubmissions":
-        reddit = reddit_client.RedditClient()
         subreddit = req.params.get('subreddit')
         results = reddit.getNewSubmissions(subreddit)
         redditResults = []
@@ -44,7 +45,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     elif function == "getNewSubmissions":
-        reddit = reddit_client.RedditClient()
         subreddit = req.params.get('subreddit')
         results = reddit.getNewSubmissions(subreddit)
         redditResults = []
@@ -58,7 +58,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     elif function == "getTopSubmissions":
-        reddit = reddit_client.RedditClient()
         subreddit = req.params.get('subreddit')
         results = reddit.getTopSubmissions(subreddit)
         redditResults = []
