@@ -14,6 +14,7 @@ import logging
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
     function = req.params.get('function')
+    sheet = gsheets_client.GSClient()
     if not function:
         try:
             req_body = req.get_json()
@@ -22,7 +23,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         else:
             function = req_body.get('function')
     if function == "getSheetLink":
-        sheet = gsheets_client.GSClient()
         sheet_title = req.params.get('sheet_title')
         response = sheet.getSheetLink(sheet_title)
         jsonObject = {"link" : response}
@@ -32,7 +32,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     elif function == "createSheet":
-        sheet = gsheets_client.GSClient()
         sheet_title = req.params.get('sheet_title')
         response = sheet.createSheet(sheet_title)
         jsonObject = {"link" : response}
@@ -42,7 +41,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     elif function == "createWorksheet":
-        sheet = gsheets_client.GSClient()
         sheet_link = req.params.get('sheet_link')
         wksht_title = req.params.get('wksht_title')
         response = sheet.createWorksheet(sheet_link, wksht_title)
@@ -55,7 +53,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     elif function == "appendToSheet":
-        sheet = gsheets_client.GSClient()
         sheet_link = req.params.get('sheet_link')
         data = req.params.get('data')
         response = sheet.appendToSheet(sheet_link, data)
