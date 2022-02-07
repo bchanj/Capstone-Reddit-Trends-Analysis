@@ -4,5 +4,9 @@
 **/client_secret.json
 **/__pycache__
 **.env
+<<<<<<< HEAD
 .python_packages
 .venv
+=======
+.idea/**
+>>>>>>> main

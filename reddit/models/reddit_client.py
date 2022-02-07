@@ -3,18 +3,20 @@ import sys
 import os
 import praw
 import re
-import bs4 
+import bs4
+import datetime
 from enum import Enum
 from typing import List, Dict
 
 sys.path.append(os.path.dirname(__file__))
-from deal import Deal, GameDeal
+from deal import Deal, GameDeal, Bundle
+from exceptions import DoesNotFollowRulesException
 
 
 class SubredditFeedFilter(Enum):
-  HOT = "hot"
-  NEW = "new"
   TOP = "top"
+  NEW = "new"
+  HOT = "hot"
 
 class SubredditTarget(Enum):
   GAMEDEALS = "GameDeals"
@@ -74,19 +76,112 @@ class RedditClient:
     # RAISES DoesNotFollowRulesException if unsuccessful
     def parseSubmissionByTitle(self, 
                               subreddit_target: SubredditTarget, 
-                              submission: praw.models.Submission) -> Deal:
-      deal: Deal = Deal()
-      m = re.match(self.subreddit_rules[subreddit_target], submission.title)
+                              submission: praw.models.Submission) -> Bundle:
+      bundle = self.parseTitle(submission.title)
+      bundle.subreddit = subreddit_target
+      bundle.url = submission.url
+      bundle.date = datetime.datetime.fromtimestamp(submission.created).strftime("%m-%d-%Y")
+      bundle.id = submission.id
+      return bundle
+    
+    def parseTitle(self, title) -> Bundle:
+      """
+      Unit Tests: 
+        >>> client = RedditClient()
+        >>> bundle = client.parseTitle('[GMG] Lego Star Wars: The Skywalker Saga Deluxe Edition - Steam Pre-order ($49.19/18% off)')
+        >>> len(bundle.deals)
+        1
+        >>> bundle.merchant
+        'GMG'
+        >>> bundle.title
+        'Lego Star Wars'
+        >>> bundle.deals[0].title
+        'The Skywalker Saga Deluxe Edition - Steam Pre-order'
+        >>> bundle.deals[0].price
+        '$49.19'
+        >>> bundle.deals[0].discount
+        '18%'
+        >>> bundle.deals[0].price_gbp
+        ''
+        >>> bundle.deals[0].price_eur
+        ''
+        >>> bundle = client.parseTitle('[GMG] Lego Star Wars: The Skywalker Saga Deluxe Edition - Steam Pre-order ($49.19/-18%)')
+        >>> bundle.deals[0].discount
+        '18%'
+        >>> bundle = client.parseTitle('[GMG] The Skywalker Saga Deluxe Edition - Steam Pre-order (17.5|€1.58|£1.18/-18% off)')
+        >>> bundle.title
+        ''
+        >>> bundle.deals[0].title
+        'The Skywalker Saga Deluxe Edition - Steam Pre-order'
+        >>> bundle.deals[0].price
+        ''
+        >>> bundle.deals[0].price_eur
+        '€1.58'
+        >>> bundle.deals[0].price_gbp
+        '£1.18'
+        >>> bundle.deals[0].discount
+        '18%'
+        >>> bundle = client.parseTitle('[Steam] Toge Productions Anniversary Sale 2022: Coffee Talk (40%), Invalid Item, Rising Hell (-20%) and More')
+        >>> bundle.merchant
+        'Steam'
+        >>> bundle.title
+        'Toge Productions Anniversary Sale 2022'
+        >>> len(bundle.deals)
+        2
+        >>> bundle.deals[0].title
+        'Coffee Talk'
+        >>> bundle.deals[0].discount
+        '40%'
+        >>> bundle.deals[1].title
+        'Rising Hell'
+        >>> bundle.deals[1].discount
+        '20%'
+      """
+      bundle = Bundle()
+      deals : List[Deal]=[]
+      m = re.match(r"^\[(.+?)\] (.+)", title)
       if m is None:
-        raise DoesNotFollowRulesException()
+        raise DoesNotFollowRulesException("Unexpected Title Format: " + title)
       else:
-          deal.merchant = m.group("merchant")
-          deal.title = m.group("title")
-          deal.discount = m.group("discount")
-          deal.url = submission.url
-      return deal
+        bundle.merchant = m[1]
+        deals_str = m[2]
+        bundle_items = deals_str.split(':')
+        if len(bundle_items) > 1:
+          bundle.title = bundle_items[0]
+          items_str = bundle_items[1]
+        else:
+          items_str = bundle_items[0]
+          
+        items = items_str.split(',')
+        for item in items:
+          deal : Deal = GameDeal()
+          item = item.strip()
+          m = re.match(r"^(.+?) \((.+?)\)", item)
+          if m is None:
+            continue
+          deal.title = m[1]
+          priceNpercent = m[2]
+          m_price_dollar = re.search(r"\$\d+(\.\d+)?", priceNpercent)
+          if m_price_dollar is not None:
+            deal.price = m_price_dollar[0]
+          m_price_pound = re.search(r"£\d+(\.\d+)?", priceNpercent)
+          if m_price_pound is not None:
+            deal.price_gbp = m_price_pound[0]
+          m_price_euro = re.search(r"€\d+(\.\d+)?", priceNpercent)
+          if m_price_euro is not None:
+            deal.price_eur = m_price_euro[0]
+          m_percent = re.search(r"\d+(\.\d+)?%", priceNpercent)
+          if m_percent is not None:
+            deal.discount = m_percent[0]
+          deals.append(deal)
+        bundle.deals = deals
+        
+        if len(bundle.deals) == 0:
+          raise DoesNotFollowRulesException("Unexpected Title Format: " + title)
+    
+      return bundle
 
-    def parseSubmissionByBody(self, submission: praw.models.Submission, subreddit_target: SubredditTarget) -> List[Deal]:
+    def parseSubmissionByBody(self, subreddit_target: SubredditTarget, submission: praw.models.Submission) -> Bundle:
       """Looks for a table in praw.models.submission.selftext_html (body) and attempts to
       parse a list of deals.
 
@@ -96,29 +191,39 @@ class RedditClient:
       Returns:
           List[Deal]: A list of deals that are successfully parsed.
       """
-      return parseTable(self, html=submission.selftext_html, subreddit_target=subreddit_target)
+      bundle = self.parseTableHtml(submission.selftext_html, subreddit_target)
+      bundle.subreddit = subreddit_target
+      bundle.url = submission.url
+      bundle.date = datetime.datetime.fromtimestamp(submission.created).strftime("%m-%d-%Y")
+      bundle.id = submission.id
+      m = re.match(r"^\[(.+?)\] (.+)", submission.title)
+      if m is None:
+        raise DoesNotFollowRulesException("Unexpected Title Format: " + submission.title)
+      else:
+        bundle.merchant = m[1]
+        bundle_items = m[2].split(':')
+        if len(bundle_items) > 1:
+          bundle.title = bundle_items[0]
+
+      return bundle
       
-    def parseTable(self, html: str, subreddit_target: SubredditTarget) -> List[Deal]:
-      """Scans a HTML table and parses it for a list of deals 
+    def parseTableHtml(self, html: str, subreddit_target: SubredditTarget) -> Bundle:
+      """Scans a table and parses it for a Bundle containing a list of deals 
 
       Args:
           html (str): string of HTML parsable with bs4
 
       Returns:
-          List[Deal]: a list of successfully parsed Deals
+          Bundle: bundle ontaining a list of successfully parsed Deals
 
       Unit Tests: 
         >>> client = RedditClient()
         >>> html = '<table class="MRH-njmSb5ZTkfb1o4dqv"><thead><tr class="s6JZe6869f81l9E_5G7Q9"><th class="_3TNkDptlyGOiWXvdX_acOB">Game</th><th class="_3TNkDptlyGOiWXvdX_acOB">Sale</th><th class="_3TNkDptlyGOiWXvdX_acOB">USD</th></tr></thead><tbody><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Dungeon of the Endless - Definitive Edition</td><td class="_3DYfYn_cczg1wj_a3hhyV6">80%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$3.99</td></tr><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Endless Legend - Monstrous Tales</td><td class="_3DYfYn_cczg1wj_a3hhyV6">33%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$2.00</td></tr></tbody></table>'
-        >>> deals = client.parseTable(html=html, subreddit_target=SubredditTarget.GAMEDEALS)
-        >>> len(deals) == 2
+        >>> bundle = client.parseTableHtml(html=html, subreddit_target=SubredditTarget.GAMEDEALS)
+        >>> len(bundle.deals) == 2
         True
-        >>> html = '<table class="MRH-njmSb5ZTkfb1o4dqv"><thead><tr class="s6JZe6869f81l9E_5G7Q9"><th class="_3TNkDptlyGOiWXvdX_acOB">UNKNOWN</th><th class="_3TNkDptlyGOiWXvdX_acOB">Sale</th><th class="_3TNkDptlyGOiWXvdX_acOB">USD</th></tr></thead><tbody><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Dungeon of the Endless - Definitive Edition</td><td class="_3DYfYn_cczg1wj_a3hhyV6">80%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$3.99</td></tr><tr class="s6JZe6869f81l9E_5G7Q9"><td class="_3DYfYn_cczg1wj_a3hhyV6">Endless Legend - Monstrous Tales</td><td class="_3DYfYn_cczg1wj_a3hhyV6">33%</td><td class="_3DYfYn_cczg1wj_a3hhyV6">$2.00</td></tr></tbody></table>'
-        >>> deals = client.parseTable(html=html, subreddit_target=SubredditTarget.GAMEDEALS)
-        >>> len(deals) == 0
-        True
-        >>>
       """
+      bundle = Bundle()
       deals: List[Deal] = [] # result from parsing all tables
       soup = bs4.BeautifulSoup(html, features="html.parser")
       tables = soup.findAll('table')
@@ -126,40 +231,28 @@ class RedditClient:
         headers = [ header.text for header in table.findAll('th')]
         tvalues = [[ cell.text for cell in row.findAll('td')] for row in table.findAll('tr')][1:]
         for row in tvalues:
-          deal: Deal = self.subreddit_deal_constructors[subreddit_target]()
+          deal: GameDeal = self.subreddit_deal_constructors[subreddit_target]()
           for index, value in enumerate(row):
             # Use the table headers to look up Deal attribute with synonyms
             deal.setAttribute(headers[index], value)
           if deal.isValid():
             deals.append(deal)
-      return deals
+          else:
+            raise DoesNotFollowRulesException("Unexpected Header Format: " + str(headers))
 
-    def parseSubmissionByUrl(self, submission:praw.models.Submission) -> List[Deal]:
-      deals: List[Deal] = []
-      return deals
+      bundle.deals = deals
+      return bundle
 
     def extractDealsFromSubmission(self, 
-                                  subreddit_target: SubredditTarget, 
-                                  submission: praw.models.Submission) -> List[Deal]:
-      deals: List[Deal] = []
-      # attempt to parse the submission by title
+                                   subreddit_target: SubredditTarget, 
+                                   submission: praw.models.Submission) -> Bundle:
       if self.containsTable(submission):
         # attempt to parse the submission body 
         # look for tables while we are at it
-        try:
-          results: List[Deal] = self.parseSubmissionByBody(submission)
-          deals.append(results)
-        except:
-          pass
+        return self.parseSubmissionByBody(subreddit_target, submission)
       else:
-        try:
-          results: List[Deal] = self.parseSubmissionByTitle(subreddit_target, submission) # raises DoesNotFollowRulesException 
-          deals.append(results)
-        except DoesNotFollowRulesException:
-          # If we are not successful in parsing by title then we can write to logs
-          pass
-
-      return deals
+        # attempt to parse the submission by title
+        return self.parseSubmissionByTitle(subreddit_target, submission)
 
     def containsTable(self, submission: praw.models.Submission) -> bool:
       for line in submission.selftext.split('\n'):
@@ -173,23 +266,52 @@ class RedditClient:
                 # Default to new posts if no override.
                 subreddit_type: SubredditFeedFilter = SubredditFeedFilter.NEW, 
                 # Default to 1000 posts if no override.
-                limit:int = 1000) -> List[Deal]:
-      deals: List[Deal] = []
+                limit:int = 1000,
+                # Report success rate or not by default.
+                report_success_rate: bool = False,
+                # Display errors or not by default
+                display_errors: bool = False) -> List[Bundle]:
+      """
+      Unit Tests:
+        >>> client = RedditClient()
+        >>> bundles = client.getDeals(limit=1, subreddit_target=SubredditTarget.GAMEDEALS)
+        >>> len(bundles)
+        1
+      """
+      bundles: List[Bundle] = []
       # Gets posts from subreddit_target filtered by subreddit_type limited to limit number of posts.
+      successes = 0
+      total = 0
       for submission in self.subreddit_function_table[subreddit_type](subreddit_target.value, limit):
-        deals.append(self.extractDealsFromSubmission(subreddit_target, submission))
-      return deals
+        total = total + 1
+        try:
+          bundles.append(self.extractDealsFromSubmission(subreddit_target, submission))
+          successes = successes + 1
+        except DoesNotFollowRulesException as error:
+          if display_errors == True:
+            print(error.message)
+      if report_success_rate == True:
+        print(subreddit_type.value + ": " + str(successes/total*100) + "%")
+      return bundles
 
 
-    def getSuccessRate(self, subreddit_title: str):
-      sample_size: int = 10000
-      for subreddit_type in SubredditFeedFilter:
-        successfully_parsed_deals = [deal for deal in self.subreddit_function_table[subreddit_type](subreddit_title, sample_size)]
-        print(str(subreddit_type) + ": " + str(len(successfully_parsed_deals)/sample_size*100) + "%")
-
-    # def _flatten(self, arr: List) -> List:
-    #   return [element for subarr in arr for element in subarr]
+    # Max sample_size is 1000. It will be capped at 1000 even if we set it higher.
+    def getSuccessRate(self, subreddit_target: SubredditTarget, sample_size: int = 1000, display_errors: bool = False):
+      """
+        client = RedditClient()
+        client.getSuccessRate(SubredditTarget.GAMEDEALS)
+        SubredditFeedFilter.NEW: 97.7%
+        SubredditFeedFilter.TOP: 100.0%
+        SubredditFeedFilter.HOT: 86.2%
+      """
+      # Report success rate for NEW submissios
+      self.getDeals(subreddit_target, SubredditFeedFilter.NEW, sample_size, True, display_errors)
+      # Report success rate for TOP submissios
+      self.getDeals(subreddit_target, SubredditFeedFilter.TOP, sample_size, True, display_errors)
+      # Report success rate for HOT submissios
+      self.getDeals(subreddit_target, SubredditFeedFilter.HOT, sample_size, True, display_errors)
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    
