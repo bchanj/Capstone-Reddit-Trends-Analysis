@@ -198,14 +198,14 @@ class GSClient():
         worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(wksht_title)
         sheetDict = {}
         # key is column header, list is cells under header
-        for k in range(100):
+        # range number is arbitrary
+        for k in range(25):
             while worksheet.col_values(k) is not None:
                 col = worksheet.col_values(k)
                 sheetDict[col(0)] = col.pop()
-        # key is column header, list is cells under header
         return sheetDict
 
-    def filterSheetDictionary(self, sheetDict):
+    def filterSheetDictionary(self, filters, sheetDict):
         """Filters the dictionary based on keyword
 
         Args:
