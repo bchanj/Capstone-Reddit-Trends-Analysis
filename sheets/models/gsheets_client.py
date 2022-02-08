@@ -15,6 +15,10 @@ from googleapiclient.errors import HttpError
 
 import deal
 
+class Filter():
+    def __init__(self, filter_name: str, filter_value: str):
+        self.filter_name = filter_name
+        self.filter_value = filter_value
 
 class GSClient():
     def __init__(self):
@@ -149,7 +153,7 @@ class GSClient():
 
         worksheet.append_rows([[value for value in vars(deal).values() if type(value) == str] for deal in deals])
 
-    def dumpDeals(self, deals: List[deal.Deal]):
+    def dumpDeals(self, deals: List[deal.Deal]) -> None:
         """Batch write a list of deals to Google spreadsheets
 
         Args:
@@ -184,7 +188,7 @@ class GSClient():
         for deal in deals:
             self.appendToSheet([deal], worksheetCache[deal.subreddit].url, deal.date)
 
-    def readSheet(self, sheet_link: str, wksht_title: str = datetime.datetime.now().strftime("%m-%d-%Y")):
+    def readSheet(self, sheet_link: str, wksht_title: str = datetime.datetime.now().strftime("%m-%d-%Y")) -> Dict[str, List[str]]:
         """Reads data from a single sheet to create an HTML table
 
         Args:
@@ -196,28 +200,42 @@ class GSClient():
 
         """
         worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(wksht_title)
-        sheetDict = {}
+        sheetDict: Dict[str, List[str]] = {}
         # key is column header, list is cells under header
-        # range number is arbitrary
-        for k in range(25):
-            while worksheet.col_values(k) is not None:
-                col = worksheet.col_values(k)
-                sheetDict[col(0)] = col.pop()
+        header: List[str] = worksheet.row_values(self.ROW_START)
+        for k in range(len(header)):
+            sheetDict[header[k]] = worksheet.col_values(k)[1:]
+            # while worksheet.col_values(k) is not None:
+            #     col = worksheet.col_values(k)
+            #     sheetDict[col(0)] = col.pop()
+        # key is column header, list is cells under header
         return sheetDict
 
-    def filterSheetDictionary(self, filters, sheetDict):
+    def filterSheetDictionary(self, sheetDict: Dict[str, List[str]], filters: List[Filter]) -> Dict[str, List[str]]:
         """Filters the dictionary based on keyword
 
         Args:
             sheetDict (dict): A dictionary with the name of the table column as the key, and a list for the table cells
 
         Unit Tests: TODO
-            # Test that checks the dictionary was filtered correctly
-
+            >>> dict: Dict[str, List[str]] = { "x": ["1", "2"], "y": ["1", "3"] }
+            >>> client: GSClient = GSClient()
+            >>> filters: List[Filter] = [Filter("x", "1"), Filter("y", "2")]
+            >>> client.filterSheetDictionary(dict, filters)
+            {"x": [1], "y": [2]}
+            >>> dict: Dict[str, List[str]] = { }
+            >>> client.filterSheetDictionary(dict, filters)
+            { }
+            >>> dict: Dict[str, List[str]] = { "z": ["1", "2"], "b": ["1", "3"] }
+            >>> client.filterSheetDictionary(dict, filters)
+            { "x": ["1", "2"], "y": ["1", "3"] }
+            >>> filters: List[Filter] = [Filter("x", "This is not in the dict"), Filter("y", "And so is this")]
+            >>> client.filterSheetDictionary(dict, filters)
+            { }
         """
         return sheetDict
 
-    def createTable(self, sheetDict):
+    def createTable(self, sheetDict: Dict[str, List[str]]):
         """Creates an HTML table template
         TODO at the moment this opens a file and dumps the table code to be copy-paste; will likely need pyppeteer to dump table into email client
 
@@ -226,7 +244,10 @@ class GSClient():
 
         Unit Tests: TODO
             # Test that a table is created with the correct information inserted
-
+            >>> dict: Dict[str, List[str]] = { "x": ["1", "2"], "y": ["1", "3"] }
+            >>> client: GSClient = GSClient()
+            >>> client.createTable(dict)
+            "<tr><th>x</th><th>y</th></tr><tr><td>1</td><td>1</td></tr><tr><td>2</td><td>3</td></tr>"
         """
         data = ""
         for k, v in sheetDict.items():
