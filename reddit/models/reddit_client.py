@@ -5,6 +5,9 @@ import praw
 import re
 import bs4
 import datetime
+import base64
+import json
+import dotenv
 from enum import Enum
 from typing import List, Dict
 
@@ -29,13 +32,7 @@ class RedditClient:
     def __init__(self):
       super().__init__()
       self.DEFAULT_LIMIT=100
-      self.reddit = praw.Reddit(
-          client_id="5J0BbjbzNZrNzSnZNOwCOQ",
-          client_secret="JWno2YEOiAOhnY0tZDVtjGa6TWolTQ",
-          password="ZhXEUe*k3qV2Ukf*vj3wuogD",
-          user_agent="testscript",
-          username="North-Alternative886",
-      )
+      self.reddit = self._prawCreateInstance()
 
       self.reddit.read_only = True # change if editing
 
@@ -54,6 +51,19 @@ class RedditClient:
       self.subreddit_deal_constructors = {
         SubredditTarget.GAMEDEALS: GameDeal
       }
+
+    def _prawCreateInstance(self) -> praw.Reddit:
+      dotenv.load_dotenv()
+      encrypted_creds: str = os.environ["PRAW_CREDS"]
+      decoded: bytes = base64.b64decode(encrypted_creds)
+      json_dict = json.loads(decoded)
+      return praw.Reddit(
+        client_id=json_dict["client_id"],
+        client_secret=json_dict["client_secret"],
+        password=json_dict["password"],
+        user_agent=json_dict["user_agent"],
+        username=json_dict["username"],
+      )
 
     def getHotSubmissions(self, subreddit_title: str, limit:int=None):
       if limit is None:
@@ -314,4 +324,5 @@ class RedditClient:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
     
