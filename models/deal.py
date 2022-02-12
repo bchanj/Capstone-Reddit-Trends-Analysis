@@ -1,6 +1,7 @@
 import re
 import praw
 import datetime
+import json
 from enum import Enum
 from typing import List,Dict
 
@@ -139,14 +140,14 @@ class Deal:
         return myDict
 
     # Override of str method of our deal object, I need this for the unit tests of Bundle class.
+    def __iter__(self):
+        yield from self.__dict__.items()
+    
     def __str__(self):
-        return self.title
-    
-    def __unicode__(self):
-        return self.title
-    
+        return json.dumps({x: dict(self)[x] for x in dict(self) if x not in ["synonyms"]}, ensure_ascii=False)
+
     def __repr__(self):
-        return self.title
+        return self.__str__()
 
 class GameDeal(Deal):
     """Deal child class representing game deals.
@@ -222,3 +223,12 @@ class GameDeal(Deal):
                 r".*£.*",
                 r".*[G|g][B|b][P|p].*",
                 r".*[P|p][O|o][U|u][N|n][D|d].*"]})
+        
+    def __iter__(self):
+        yield from self.__dict__.items()
+    
+    def __str__(self):
+        return json.dumps({x: dict(self)[x] for x in dict(self) if x not in ["synonyms"]}, ensure_ascii=False)
+
+    def __repr__(self):
+        return self.__str__()
