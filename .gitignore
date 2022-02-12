@@ -7,3 +7,4 @@
 .venv
 .idea/**
 reddit/models/credentials.json
+cosmos/models/credentials.json
