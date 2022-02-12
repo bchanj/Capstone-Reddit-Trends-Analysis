@@ -1,6 +1,8 @@
-import os
 import sys
-sys.path.append(os.path.dirname(__file__))
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'models'))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'cosmos', 'models'))
+
 from models import gsheets_client
 from cgi import test
 from importlib.resources import path
