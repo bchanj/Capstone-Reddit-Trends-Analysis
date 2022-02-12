@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "models"))
+
 import gspread
 import datetime
 import os
@@ -12,8 +17,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-sys.path.append(os.path.dirname(__file__))
-import deal
+from deal import Deal
 
 class GSClient():
     def __init__(self):
@@ -121,18 +125,18 @@ class GSClient():
         except:
             worksheet = sheet.add_worksheet(title=wksht_title, rows=0, cols=0)
 
-    def appendToSheet(self, deals: List[deal.Deal], sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
+    def appendToSheet(self, deals: List[Deal], sheet_link: str, wksht_title: str=datetime.datetime.now().strftime("%m-%d-%Y")) -> None:
         """Append new data rows to a sheet.
 
         Args:
             sheet_link (str): A link to the Google Sheet. See -> getSheet()
-            data (List[deal.Deal]): A list of data rows to append to the Google spreadsheet.
+            data (List[Deal]): A list of data rows to append to the Google spreadsheet.
 
         Unit Tests:
             >>> client = GSClient()
             >>> link = client.createSheet("Test")
             >>> client.createWorksheet(link, "TestWorksheet")
-            >>> deals = [deal.Deal(subreddit="r/Gamedeal.Deals", title="50% off Halo Infinite Gear", date="1/2/2022"),deal.Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"),deal.Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
+            >>> deals = [Deal(subreddit="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"),Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"),Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
             >>> client.appendToSheet(deals, link, "TestWorksheet")
             >>> worksheet = client.gspread_client.open_by_url(link).worksheet("TestWorksheet")
         """
@@ -140,13 +144,13 @@ class GSClient():
         self.createWorksheet(sheet_link=sheet_link, wksht_title=wksht_title)
         worksheet: gspread.models.Spreadsheet.worksheet = self.gspread_client.open_by_url(sheet_link).worksheet(wksht_title)
         # Update/Write headers to the spreadsheet
-        # Enumerate over attributes in deal.Deal object to create header
+        # Enumerate over attributes in Deal object to create header
         for index, attribute in enumerate(vars(deals[0]).keys()):
             worksheet.update_cell(self.ROW_START, self.COL_START + index, attribute)
         
         worksheet.append_rows([[ value for value in vars(deal).values() if type(value) == str] for deal in deals])
 
-    def dumpDeals(self, deals: List[deal.Deal]):
+    def dumpDeals(self, deals: List[Deal]):
         """Batch write a list of deals to Google spreadsheets
 
         Args:
@@ -157,7 +161,7 @@ class GSClient():
             # Test that a list of deals with different dates are written to the correct spreadsheets
             >>> client = GSClient()
             >>> link = client.createSheet("Test")
-            >>> deals = [deal.Deal(subreddit="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"), deal.Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"), deal.Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
+            >>> deals = [Deal(subreddit="r/GameDeals", title="50% off Halo Infinite Gear", date="1/2/2022"), Deal(subreddit="r/MUAOnTheCheap", title="FREE Makeup if you promote X company", date="1/11/2022"), Deal(subreddit="r/ThisDoesntExistYet", title="50% off Halo Infinite Gear", date="1/11/2022")]
             >>> client.dumpDeals(deals)
             >>> worksheets = [ client.gspread_client.open(deal.subreddit).worksheet(deal.date) for deal in deals ]
         """
