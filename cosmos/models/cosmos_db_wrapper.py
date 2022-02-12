@@ -1,16 +1,16 @@
+#!/usr/bin/env python3
 import sys
-import path
-# directory reach
-directory = path.path(__file__).abspath()
-# setting path
-sys.path.append(directory.parent.parent)
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "models"))
+
 
 import os
 import base64
 import json
 import dotenv
 from azure.cosmos import CosmosClient
-from deal import Bundle
+from bundle import Bundle
+from query_filter import QueryFilter
 from typing import List
 
 class CosmosClientWrapper():
@@ -24,22 +24,32 @@ class CosmosClientWrapper():
         container_name = 'Items'
         self._container = self._database.get_container_client(container_name)
 
-    def _createContainer(self):
+    def _createContainer(self) -> None:
         try:
             self._container = self._database.create_container(id=container_name, partition_key=PartitionKey(path="/productName"))
         except exceptions.CosmosResourceExistsError:
             self._container = self._database.get_container_client(container_name)
         except exceptions.CosmosHttpResponseError:
             raise
-        pass
 
-    def createEntries(self, deals):
-        pass
+    def createEntries(self, bundles: List[Bundle]) -> None:
+        for bundle in bundles:
+            # print(bundle.__dict__)
+            self._container.upsert_item(bundle.__dict__)
 
-    def readEntries(self, filters: List[QueryFilter]=None):
+    def readEntries(self, filters: List[QueryFilter]=None, start: int=0, limit:int=10):
+        clauses = ""
+        whereClause = ""
+        if filters is not None:
+            clauses = " AND ".join([f'RegexMatch(c.{f.key}, "{f.value}")' for f in filters])
+            whereClause = f"WHERE {clauses}"
         result = []
         for item in self._container.query_items(
-        query='SELECT * FROM c IN Items.items WHERE RegexMatch(c.Game, "[F|f][R|r][E|e][E|e]")',
+        query=f'''
+            SELECT * 
+            FROM c IN Items.items 
+            {whereClause}
+            OFFSET {start} LIMIT {limit}''',
         enable_cross_partition_query=True):
             result.append(item)
         return result
@@ -49,6 +59,3 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
     wrapper = CosmosClientWrapper()
-    res = wrapper.readEntries()
-    for r in res:
-        print(r)
