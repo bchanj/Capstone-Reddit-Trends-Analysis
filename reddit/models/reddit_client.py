@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "models"))
+
 import praw
 import re
 import bs4
@@ -10,20 +12,11 @@ import json
 import dotenv
 from enum import Enum
 from typing import List, Dict
-
-sys.path.append(os.path.dirname(__file__))
-from deal import Deal, GameDeal, Bundle
+from bundle import Bundle
+from deal import Deal, GameDeal
+from subreddit_target import SubredditTarget
+from subreddit_feed_filter import SubredditFeedFilter
 from exceptions import DoesNotFollowRulesException
-
-
-class SubredditFeedFilter(Enum):
-  TOP = "top"
-  NEW = "new"
-  HOT = "hot"
-
-class SubredditTarget(Enum):
-  GAMEDEALS = "GameDeals"
-  MUA = "MUAonTheCheap"
 
 class RedditClient:
     """
@@ -88,7 +81,7 @@ class RedditClient:
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Bundle:
       bundle = self.parseTitle(submission.title)
-      bundle.subreddit = subreddit_target
+      bundle.subreddit = subreddit_target.value
       bundle.url = submission.url
       bundle.date = datetime.datetime.fromtimestamp(submission.created).strftime("%m-%d-%Y")
       bundle.id = submission.id
@@ -202,7 +195,7 @@ class RedditClient:
           List[Deal]: A list of deals that are successfully parsed.
       """
       bundle = self.parseTableHtml(submission.selftext_html, subreddit_target)
-      bundle.subreddit = subreddit_target
+      bundle.subreddit = subreddit_target.value
       bundle.url = submission.url
       bundle.date = datetime.datetime.fromtimestamp(submission.created).strftime("%m-%d-%Y")
       bundle.id = submission.id
@@ -276,7 +269,7 @@ class RedditClient:
                 # Default to new posts if no override.
                 subreddit_type: SubredditFeedFilter = SubredditFeedFilter.NEW, 
                 # Default to 1000 posts if no override.
-                limit:int = 1000,
+                limit:int = 10,
                 # Report success rate or not by default.
                 report_success_rate: bool = False,
                 # Display errors or not by default
