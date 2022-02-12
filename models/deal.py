@@ -4,9 +4,6 @@ import datetime
 from enum import Enum
 from typing import List,Dict
 
-import sys
-sys.path.append(os.path.dirname(__file__))
-
 # We turn our objects into dictionaries before we push to Cosmos DB.
 # These are the keys that we use in these dictionaries.
 class DictionaryKeys(Enum):

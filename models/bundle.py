@@ -1,4 +1,6 @@
-from deal import Deal
+import datetime
+from typing import List
+from deal import Deal, GameDeal, DictionaryKeys
 
 class Bundle:
     """Represents a bundle and contains deals.
