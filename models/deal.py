@@ -1,8 +1,26 @@
 import re
 import praw
 import datetime
-
+from enum import Enum
 from typing import List,Dict
+
+import sys
+sys.path.append(os.path.dirname(__file__))
+
+# We turn our objects into dictionaries before we push to Cosmos DB.
+# These are the keys that we use in these dictionaries.
+class DictionaryKeys(Enum):
+  TITLE = "title"
+  MERCHANT = "merchant"
+  DISCOUNT = "discount"
+  PRICE = "usd"
+  PRICE_EUR = "eur"
+  PRICE_GBP = "gbp"
+  DATE = "date"
+  ID = "id"
+  URL = "url"
+  SUBREDDIT = "subreddit"
+  DEALS = "deals"
 
 class Deal:
     def __init__(self,
@@ -92,6 +110,37 @@ class Deal:
             if any([ re.compile(regex).match(synonym) for regex in synonym_list ]):
                 setattr(self, attribute, value)
                 break
+
+    def getCosmosDBObject(self) -> dict:
+        """Cosmos DB API expects dictionaries.
+
+        Unit Tests:
+        >>> d = Deal()
+        >>> d.title = "My Title"
+        >>> d.price = "$55"
+        >>> d.discount = "20%"
+        >>> d.getCosmosDBObject()
+        {'title': 'My Title', 'discount': '20%', 'usd': '$55'}
+
+        >>> d = Deal()
+        >>> d.title = "ThisIsAVeryLongTitle"
+        >>> d.price_eur = "€20"
+        >>> d.discount = "60%"
+        >>> d.getCosmosDBObject()
+        {'title': 'ThisIsAVeryLongTitle', 'discount': '60%', 'eur': '€20'}
+        """
+        myDict = {}
+        myDict[DictionaryKeys.TITLE.value] = self.title
+        if self.discount != '':
+            myDict[DictionaryKeys.DISCOUNT.value] = self.discount
+        if self.price != '':
+            myDict[DictionaryKeys.PRICE.value] = self.price
+        if self.price_eur != '':
+            myDict[DictionaryKeys.PRICE_EUR.value] = self.price_eur
+        if self.price_gbp != '':
+            myDict[DictionaryKeys.PRICE_GBP.value] = self.price_gbp
+        return myDict
+
     # Override of str method of our deal object, I need this for the unit tests of Bundle class.
     def __str__(self):
         return self.title
@@ -176,39 +225,3 @@ class GameDeal(Deal):
                 r".*£.*",
                 r".*[G|g][B|b][P|p].*",
                 r".*[P|p][O|o][U|u][N|n][D|d].*"]})
-
-
-class Bundle:
-    """Represents a bundle and contains deals.
-
-    Unit Tests:
-    >>> g = GameDeal(title="Awesome Sale")
-    >>> g.setAttribute("Sale", "80%")
-    >>> g.discount == "80%"
-    True
-    >>> b = Bundle()
-    >>> b.deals.append(g)
-    >>> b.deals
-    [Awesome Sale]
-    """
-    def __init__(self,
-                 id: str="",
-                 subreddit: str="r/GameDeals",
-                 title: str="",
-                 merchant: str="",
-                 discount: str="",
-                 url: str="",
-                 date: str=datetime.datetime.now().strftime("%m-%d-%Y"),
-                 deals: List[Deal]=[]):
-        self.id=id
-        self.subreddit=subreddit
-        self.title=title
-        self.merchant=merchant
-        self.discount=discount
-        self.url=url
-        self.deals=deals
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
