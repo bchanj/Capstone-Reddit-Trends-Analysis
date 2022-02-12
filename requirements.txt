@@ -14,4 +14,4 @@ typing
 pathlib
 bs4
 python-dotenv
-azure.cosmos
+azure-cosmos
