@@ -15,7 +15,7 @@ pkg_list = [
     "python-dotenv",
     "colorama",
     "bs4",
-    "azure.cosmos",
+    "azure-cosmos",
 ]
 
 def import_or_install(package):
