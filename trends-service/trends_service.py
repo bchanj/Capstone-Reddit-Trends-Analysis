@@ -7,6 +7,7 @@ import logging
 
 import azure.functions as func
 from cosmos_db_wrapper import CosmosClientWrapper
+from query_filter import QueryFilter
 from typing import Dict, List
 from collections import defaultdict
 
@@ -26,34 +27,33 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             "<tr><th>x</th><th>y</th></tr><tr><td>1</td><td>1</td></tr><tr><td>2</td><td>3</td></tr>"
         """
         html = '<table><tr><th>' + '</th><th>'.join(data.keys()) + '</th></tr>'
-
         for row in zip(*data.values()):
             html += '<tr><td>' + '</td><td>'.join(row) + '</td></tr>'
-
         html += '</table>'
-
         return html
 
-    try:
-        logging.info('Python HTTP trigger function processed a request.')
-        cosmosDbWrapper = CosmosClientWrapper()
-        extract = cosmosDbWrapper.readEntries()
-        res = defaultdict(list)
-        for sub in extract:
-            for key in sub:
-                res[key].append(sub[key])
-        data = createTable(res)
-        preamble = open("table_template.html").read()
-        table = open("table_template.html").read().format(table_contents=data)
-        print(preamble + table)
-        return func.HttpResponse(
-            status_code=200,
-            headers={'content-type':'text/html'}, 
-            body=(preamble+table))
-    except (e):
-        message=f"Internal Server Error: {e}"
-        logging.info(message)
-        return func.HttpResponse(
-             status_code=500,
-             
-        )
+    # filter deals
+    # filters: List[QueryFilter] = []
+    # for header in req.headers.items():
+    #     filters.append(QueryFilter(key=header[0], value=header[1]))
+
+    logging.info('Python HTTP trigger function processed a request.')
+    cosmosDbWrapper = CosmosClientWrapper()
+    extract = cosmosDbWrapper.readEntries()
+
+    res = defaultdict(list)
+    for sub in extract:
+        for key in sub:
+            res[key].append(sub[key])
+    data = createTable(res)
+    
+    parent_dir = os.path.dirname(__file__)
+    preamble = open(os.path.join(parent_dir, "preamble.html")).read()
+    table = open(os.path.join(parent_dir, "table_template.html")).read().format(table_contents=data)
+    return func.HttpResponse(
+        status_code=200,
+        headers={'content-type':'text/html'},
+        charset="utf-16",
+        # charset='utf-16',
+        body=(preamble+table)
+    )

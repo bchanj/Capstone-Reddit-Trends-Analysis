@@ -41,8 +41,9 @@ class CosmosClientWrapper():
         clauses = ""
         whereClause = ""
         if filters is not None:
-            clauses = " AND ".join([f'RegexMatch(c.{f.key}, "{f.value}")' for f in filters])
+            clauses = " AND ".join([f'CONTAINS(c.{f.key}, "{f.value}")' for f in filters])
             whereClause = f"WHERE {clauses}"
+        print(whereClause)
         result = []
         for item in self._container.query_items(
         query=f'''
