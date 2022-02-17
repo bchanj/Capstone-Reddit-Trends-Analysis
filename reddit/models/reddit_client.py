@@ -269,11 +269,11 @@ class RedditClient:
                 # Default to new posts if no override.
                 subreddit_type: SubredditFeedFilter = SubredditFeedFilter.NEW, 
                 # Default to 1000 posts if no override.
-                limit:int = 10,
+                limit:int = 30,
                 # Report success rate or not by default.
-                report_success_rate: bool = False,
+                report_success_rate: bool =  True,
                 # Display errors or not by default
-                display_errors: bool = False) -> List[Bundle]:
+                display_errors: bool = True) -> List[Bundle]:
       """
       Unit Tests:
         >>> client = RedditClient()
@@ -314,8 +314,18 @@ class RedditClient:
       # Report success rate for HOT submissios
       self.getDeals(subreddit_target, SubredditFeedFilter.HOT, sample_size, True, display_errors)
 
+    def PreprocessingTest(self, sample_size: int = 10):
+        reddit = RedditClient()
+        bundle = reddit.getDeals(SubredditTarget.GAMEDEALS)
+        for list in bundle:
+            print(list.title)
+            deals = list.getCosmosDBObject()
+            
+            for deal in deals['deals']: #Print the table of deals 
+                print(str(deal) + "  " + deals['id'])
+
 if __name__ == "__main__":
     import doctest
-    doctest.testmod()
-
-    
+    #doctest.testmod()
+    reddit = RedditClient()
+    reddit.PreprocessingTest(10)
