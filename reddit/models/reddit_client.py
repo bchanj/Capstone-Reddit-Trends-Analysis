@@ -80,7 +80,8 @@ class RedditClient:
     def parseSubmissionByTitle(self, 
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Bundle:
-      bundle = self.parseTitle(submission.title)
+      newTitle = self.PreprocessTitle(submission.title)
+      bundle = self.parseTitle(newTitle)
       bundle.subreddit = subreddit_target.value
       bundle.url = submission.url
       bundle.date = datetime.datetime.fromtimestamp(submission.created).strftime("%m-%d-%Y")
@@ -314,21 +315,18 @@ class RedditClient:
       # Report success rate for HOT submissios
       self.getDeals(subreddit_target, SubredditFeedFilter.HOT, sample_size, True, display_errors)
 
+    # BASIC IDEA: Replace commas in prices within periods
+    # Search through title until we hit a $/Euro/Etc and then look a few spaces forward, if comma, replace
     def PreprocessingTest(self, sample_size: int = 10):
         reddit = RedditClient()
-        bundle = reddit.getDeals(SubredditTarget.GAMEDEALS)
+        bundles = reddit.getDeals(SubredditTarget.GAMEDEALS)
         total = 0
 
         doubleCheckDeals = [] #Used to manually verify posts.
 
-        for list in bundle:
-            deals = list.getCosmosDBObject()
-            for deal in deals['deals']: #Print the table of deals 
-                """
-                #Show all possible deals
-                print(deal)
-                """
-
+        for bundle in bundles:
+            deals = bundle.getCosmosDBObject()
+            for deal in deals['deals']: #Print the table of deals  
                 #Track only single posts. Posts will multiple titles are accurate
                 if len(deals['deals']) == 1:
                     #Posts that are missing title or discount 
@@ -338,14 +336,21 @@ class RedditClient:
                         #Store to manually check posts that have required information. 
                         #We need to check because the title might be filled but might be 'title' : "$5.99. Which is wrong.
                         doubleCheckDeals.append(deals)
-                total += 1
+                    total += 1
         
-
         #Manually check deals
         print()
         print("Manual Check of Single Post Deals")
         for deal in doubleCheckDeals:
             print(str(deal['deals']) + ' ' + deals['id'])
+
+    def PreprocessTitle(self, title):
+        moneySignList = ['$', '€', '£']
+        for char in title:
+            if char in moneySignList:
+                for i in range(3):
+                    if i == ',':
+                        char[i] = '.'
 
 if __name__ == "__main__":
     import doctest
