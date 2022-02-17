@@ -317,12 +317,35 @@ class RedditClient:
     def PreprocessingTest(self, sample_size: int = 10):
         reddit = RedditClient()
         bundle = reddit.getDeals(SubredditTarget.GAMEDEALS)
+        total = 0
+
+        doubleCheckDeals = [] #Used to manually verify posts.
+
         for list in bundle:
-            print(list.title)
             deals = list.getCosmosDBObject()
-            
             for deal in deals['deals']: #Print the table of deals 
-                print(str(deal) + "  " + deals['id'])
+                """
+                #Show all possible deals
+                print(deal)
+                """
+
+                #Track only single posts. Posts will multiple titles are accurate
+                if len(deals['deals']) == 1:
+                    #Posts that are missing title or discount 
+                    if ('title' not in deal) or ('discount' not in deal): 
+                        print(str(deal) + ' ' + deals['id'])    
+                    else:
+                        #Store to manually check posts that have required information. 
+                        #We need to check because the title might be filled but might be 'title' : "$5.99. Which is wrong.
+                        doubleCheckDeals.append(deals)
+                total += 1
+        
+
+        #Manually check deals
+        print()
+        print("Manual Check of Single Post Deals")
+        for deal in doubleCheckDeals:
+            print(str(deal['deals']) + ' ' + deals['id'])
 
 if __name__ == "__main__":
     import doctest
