@@ -27,6 +27,7 @@ class RedditClient:
       self.DEFAULT_LIMIT=100
       self.reddit = self._prawCreateInstance()
 
+      self.preprocessSetting = False
       self.reddit.read_only = True # change if editing
 
       # Map of subreddit types to PRAW function for scraping
@@ -80,8 +81,11 @@ class RedditClient:
     def parseSubmissionByTitle(self, 
                               subreddit_target: SubredditTarget, 
                               submission: praw.models.Submission) -> Bundle:
-      newTitle = self.PreprocessTitle(submission.title)
-      bundle = self.parseTitle(newTitle)
+      if (self.preprocessSetting):
+          newTitle = self.PreprocessTitle(submission.title)
+          bundle = self.parseTitle(newTitle)
+      else: 
+          bundle = self.parseTitle(submission.title)
       bundle.subreddit = subreddit_target.value
       bundle.url = submission.url
       bundle.date = datetime.datetime.fromtimestamp(submission.created).strftime("%m-%d-%Y")
@@ -351,9 +355,12 @@ class RedditClient:
                 for i in range(3):
                     if i == ',':
                         char[i] = '.'
+        return title
 
 if __name__ == "__main__":
     import doctest
     #doctest.testmod()
     reddit = RedditClient()
+    reddit.PreprocessingTest(10)
+    reddit.preprocessSetting = True
     reddit.PreprocessingTest(10)
