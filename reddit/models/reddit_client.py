@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from random import sample
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "models"))
@@ -323,7 +324,7 @@ class RedditClient:
     # Search through title until we hit a $/Euro/Etc and then look a few spaces forward, if comma, replace
     def PreprocessingTest(self, sample_size: int = 10):
         reddit = RedditClient()
-        bundles = reddit.getDeals(SubredditTarget.GAMEDEALS)
+        bundles = reddit.getDeals(SubredditTarget.GAMEDEALS, SubredditFeedFilter.NEW, sample_size, True, True)
         total = 0
 
         doubleCheckDeals = [] #Used to manually verify posts.
@@ -361,6 +362,7 @@ if __name__ == "__main__":
     import doctest
     #doctest.testmod()
     reddit = RedditClient()
-    reddit.PreprocessingTest(10)
+    reddit.PreprocessingTest(20)
     reddit.preprocessSetting = True
-    reddit.PreprocessingTest(10)
+    print("================================================================================")
+    reddit.PreprocessingTest(20)
