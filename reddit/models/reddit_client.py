@@ -124,7 +124,7 @@ class RedditClient:
         '£1.18'
         >>> bundle.deals[0].discount
         '18%'
-        >>> bundle = client.parseTitle('[Steam] Toge Productions Anniversary Sale 2022: Coffee Talk (40%), Invalid Item, Rising Hell (-20%) and More')
+        >>> bundle = client.parseTitle('[Steam] Toge Productions Anniversary Sale 2022: Coffee Talk (40%), Rising Hell (-20%) and More')
         >>> bundle.merchant
         'Steam'
         >>> bundle.title
@@ -139,41 +139,66 @@ class RedditClient:
         'Rising Hell'
         >>> bundle.deals[1].discount
         '20%'
+
+        >>> bundle = client.parseTitle('[Steam] Toge Productions Anniversary Sale 2022: Coffee Talk (%40)-- Free the people ($4,50):: Rising Hell (-20% 3,99$), Freedom Fighters (FREE) and More')
+        >>> bundle.merchant
+        'Steam'
+        >>> bundle.title
+        'Toge Productions Anniversary Sale 2022'
+        >>> len(bundle.deals)
+        4
+        >>> bundle.deals[0].title
+        'Coffee Talk'
+        >>> bundle.deals[0].discount
+        '%40'
+        >>> bundle.deals[1].title
+        'Free the people'
+        >>> bundle.deals[1].price
+        '$4,50'
+        >>> bundle.deals[2].title
+        'Rising Hell'
+        >>> bundle.deals[2].discount
+        '20%'
+        >>> bundle.deals[2].price
+        '3,99$'
+        >>> bundle.deals[3].title
+        'Freedom Fighters'
+        >>> bundle.deals[3].price
+        'FREE'
       """
       bundle = Bundle()
       deals : List[Deal]=[]
+      # Here we are parsing out the merchant, and the rest
       m = re.match(r"^\[(.+?)\] (.+)", title)
       if m is None:
         raise DoesNotFollowRulesException("Unexpected Title Format: " + title)
       else:
         bundle.merchant = m[1]
         deals_str = m[2]
+        # Here we are parsing out the bundle title
         bundle_items = deals_str.split(':')
         if len(bundle_items) > 1:
           bundle.title = bundle_items[0]
-          items_str = bundle_items[1]
+          index = deals_str.index(':')
+          items_str = deals_str[index + 1:]
         else:
           items_str = bundle_items[0]
-          
-        items = items_str.split(',')
+        
+        items = re.findall(r"\W*(.+?) \((.+?)\)", items_str)
         for item in items:
           deal : Deal = GameDeal()
-          item = item.strip()
-          m = re.match(r"^(.+?) \((.+?)\)", item)
-          if m is None:
-            continue
-          deal.title = m[1]
-          priceNpercent = m[2]
-          m_price_dollar = re.search(r"\$\d+(\.\d+)?", priceNpercent)
+          deal.title = item[0]
+          priceNpercent = item[1]
+          m_price_dollar = re.search(r"(\$\d+([,.]\d+)?)|(\d+([,.]\d+)?\$)|[Ff][Rr][Ee][Ee]", priceNpercent)
           if m_price_dollar is not None:
             deal.price = m_price_dollar[0]
-          m_price_pound = re.search(r"£\d+(\.\d+)?", priceNpercent)
+          m_price_pound = re.search(r"(£\d+([,.]\d+)?)|(\d+([,.]\d+)?£)|[Ff][Rr][Ee][Ee]", priceNpercent)
           if m_price_pound is not None:
             deal.price_gbp = m_price_pound[0]
-          m_price_euro = re.search(r"€\d+(\.\d+)?", priceNpercent)
+          m_price_euro = re.search(r"(€\d+([,.]\d+)?)|(\d+([,.]\d+)?€)|[Ff][Rr][Ee][Ee]", priceNpercent)
           if m_price_euro is not None:
             deal.price_eur = m_price_euro[0]
-          m_percent = re.search(r"\d+(\.\d+)?%", priceNpercent)
+          m_percent = re.search(r"(\d+([,.]\d+)?%)|(%\d+([,.]\d+)?)", priceNpercent)
           if m_percent is not None:
             deal.discount = m_percent[0]
           deals.append(deal)
@@ -317,5 +342,3 @@ class RedditClient:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
-    
