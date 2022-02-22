@@ -9,6 +9,7 @@ from typing import List,Dict
 # These are the keys that we use in these dictionaries.
 class DictionaryKeys(Enum):
   TITLE = "title"
+  BUNDLE_TITLE = "bundle_title"
   MERCHANT = "merchant"
   DISCOUNT = "discount"
   PRICE = "usd"
@@ -16,6 +17,7 @@ class DictionaryKeys(Enum):
   PRICE_GBP = "gbp"
   DATE = "date"
   ID = "id"
+  BUNDLE_ID = "bundle_id"
   URL = "url"
   SUBREDDIT = "subreddit"
   DEALS = "deals"
@@ -23,19 +25,27 @@ class DictionaryKeys(Enum):
 class Deal:
     def __init__(self,
                  subreddit: str="",
-                 title: str="",
+                 url: str="",
+                 bundle_id: str="",
+                 bundle_title: str="",
+                 date: str=datetime.datetime.now().strftime("%m-%d-%Y"),
                  merchant: str="",
+                 id: str="",
+                 title: str="",
                  discount: str="",
                  price: str="",
                  price_eur: str="",
                  price_gbp: str="",
-                 date: str=datetime.datetime.now().strftime("%m-%d-%Y"),
                  synonyms: Dict[str, str]={}):
         self.subreddit = subreddit
+        self.url = url
+        self.bundle_id = bundle_id
+        self.bundle_title = bundle_title
+        self.date = date
+        self.merchant = merchant
+        self.id = id
         self.title = title
         self.discount = discount
-        self.merchant = merchant
-        self.date = date
         self.price = price
         self.price_eur = price_eur
         self.price_gbp = price_gbp
@@ -52,18 +62,31 @@ class Deal:
         Unit Tests:
         >>> d = Deal(subreddit="r/GameDeals", title="ABC", discount="ABC")
         >>> d.isValid()
-        True
-        >>> d = Deal(subreddit="r/GameDeals", title="ABC", price="ABC")
+        False
+        >>> d = Deal(id="abc1", subreddit="r/GameDeals", title="ABC", price="ABC")
+        >>> d.isValid()
+        False
+        >>> d = Deal(bundle_id="abc", subreddit="r/GameDeals", title="ABC", price_eur="ABC")
+        >>> d.isValid()
+        False
+        >>> d = Deal(id="abc1", bundle_id="abc", subreddit="r/GameDeals", title="ABC", discount="ABC")
         >>> d.isValid()
         True
-        >>> d = Deal(subreddit="r/GameDeals", title="ABC", price_eur="ABC")
+        >>> d = Deal(id="abc1", bundle_id="abc", subreddit="r/GameDeals", title="ABC", price="ABC")
         >>> d.isValid()
         True
-        >>> d = Deal(merchant="ABC")
+        >>> d = Deal(id="abc1", bundle_id="abc", subreddit="r/GameDeals", title="ABC", price_eur="ABC")
+        >>> d.isValid()
+        True
+        >>> d = Deal(id="abc1", bundle_id="abc", merchant="ABC")
         >>> d.isValid()
         False
         """
-        return self.title != "" and self.subreddit != "" and ( self.discount != "" or self.price != "" or self.price_eur != "" or self.price_gbp != "") 
+        return (self.id != ""
+          and self.bundle_id != ""
+          and self.title != ""
+          and self.subreddit != ""
+          and ( self.discount != "" or self.price != "" or self.price_eur != "" or self.price_gbp != ""))
 
     def setAttribute(self, synonym: str, value: str) -> None:
         """Set class attribute with regular expression matching.
@@ -113,22 +136,46 @@ class Deal:
         """Cosmos DB API expects dictionaries.
 
         Unit Tests:
-        >>> d = Deal()
-        >>> d.title = "My Title"
-        >>> d.price = "$55"
-        >>> d.discount = "20%"
-        >>> d.getCosmosDBObject()
-        {'title': 'My Title', 'discount': '20%', 'usd': '$55'}
+        >>> d1 = Deal()
+        >>> d1.bundle_id = "abc"
+        >>> d1.id = "abc1"
+        >>> d1.date = "1-30-2022"
+        >>> d1.merchant = "barancompany"
+        >>> d1.bundle_title = "baransgames"
+        >>> d1.subreddit = "breddit"
+        >>> d1.url = "barangames.com"
+        >>> d1.title = "My Title"
+        >>> d1.price = "$55"
+        >>> d1.discount = "20%"
+        >>> d1.getCosmosDBObject()
+        {'subreddit': 'breddit', 'url': 'barangames.com', 'bundle_id': 'abc', 'bundle_title': 'baransgames', 'date': '1-30-2022', 'merchant': 'barancompany', 'id': 'abc1', 'title': 'My Title', 'discount': '20%', 'usd': '$55'}
 
-        >>> d = Deal()
-        >>> d.title = "ThisIsAVeryLongTitle"
-        >>> d.price_eur = "€20"
-        >>> d.discount = "60%"
-        >>> d.getCosmosDBObject()
-        {'title': 'ThisIsAVeryLongTitle', 'discount': '60%', 'eur': '€20'}
+        >>> d2 = Deal()
+        >>> d2.bundle_id = "abc"
+        >>> d2.id = "abc2"
+        >>> d2.title = "ThisIsAVeryLongTitle"
+        >>> d2.price_eur = "€20"
+        >>> d2.discount = "60%"
+        >>> d2.getCosmosDBObject()
+        {'bundle_id': 'abc', 'date': '02-21-2022', 'id': 'abc2', 'title': 'ThisIsAVeryLongTitle', 'discount': '60%', 'eur': '€20'}
         """
         myDict = {}
-        myDict[DictionaryKeys.TITLE.value] = self.title
+        if self.subreddit != '':
+            myDict[DictionaryKeys.SUBREDDIT.value] = self.subreddit
+        if self.url != '':
+            myDict[DictionaryKeys.URL.value] = self.url
+        if self.bundle_id != '':
+            myDict[DictionaryKeys.BUNDLE_ID.value] = self.bundle_id
+        if self.bundle_title != '':
+            myDict[DictionaryKeys.BUNDLE_TITLE.value] = self.bundle_title
+        if self.date != '':
+            myDict[DictionaryKeys.DATE.value] = self.date
+        if self.merchant != '':
+            myDict[DictionaryKeys.MERCHANT.value] = self.merchant
+        if self.id != '':
+            myDict[DictionaryKeys.ID.value] = self.id
+        if self.title != '':
+            myDict[DictionaryKeys.TITLE.value] = self.title
         if self.discount != '':
             myDict[DictionaryKeys.DISCOUNT.value] = self.discount
         if self.price != '':
@@ -139,7 +186,7 @@ class Deal:
             myDict[DictionaryKeys.PRICE_GBP.value] = self.price_gbp
         return myDict
 
-    # Override of str method of our deal object, I need this for the unit tests of Bundle class.
+    # Override of str method of our deal object.
     def __iter__(self):
         yield from self.__dict__.items()
     
@@ -187,22 +234,31 @@ class GameDeal(Deal):
     '€99'
     """
     def __init__(self,
-                 title: str="",
-                 merchant: str="",
-                 discount: str="",
+                 url: str="",
+                 bundle_id: str="",
+                 bundle_title: str="",
                  date: str=datetime.datetime.now().strftime("%m-%d-%Y"),
+                 merchant: str="",
+                 id: str="",
+                 title: str="",
+                 discount: str="",
                  price: str="",
                  price_eur: str="",
                  price_gbp: str=""):
         super().__init__(
-            subreddit='r/GameDeals',
-            title=title, 
-            merchant=merchant, 
-            discount=discount, 
-            price=price, 
-            price_eur=price_eur, 
-            price_gbp=price_gbp, 
-            synonyms={
+            subreddit = 'r/GameDeals',
+            url = url,
+            bundle_id = bundle_id,
+            bundle_title = bundle_title,
+            date = date,
+            merchant = merchant,
+            id = id,
+            title = title,
+            discount = discount,
+            price = price,
+            price_eur = price_eur,
+            price_gbp = price_gbp,
+            synonyms = {
             "title": [
                 r".*[D|d][E|e][A|a][L|l].*",
                 r".*[G|g][A|a][M|m][E|e].*",
@@ -210,7 +266,7 @@ class GameDeal(Deal):
             "discount": [
                 r".*%.*",
                 r".*[S|s][A|a][L|l][E|e].*",
-                r".*[D|d][I|i][S|s][C|c][O|o][U|u][N|n][T|t].*",
+                r".*[D|d][I|i][S|s][C|c].*",
                 r".*[O|o][F|f][F|f].*"],
             "price": [
                 r".*[U|u][S|s][D|d].*",
@@ -232,3 +288,7 @@ class GameDeal(Deal):
 
     def __repr__(self):
         return self.__str__()
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
