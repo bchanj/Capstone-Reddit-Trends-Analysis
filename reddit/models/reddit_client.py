@@ -441,6 +441,4 @@ class RedditClient:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    # Keeping these as comments so we can use later during sponsor demo.
-    client = RedditClient()
-    client.getSuccessRate(SubredditTarget.GAMEDEALS, 100, True)
+    
