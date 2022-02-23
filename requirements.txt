@@ -2,16 +2,16 @@
 # The Python Worker is managed by Azure Functions platform
 # Manually managing azure-functions-worker may cause unexpected issues
 
+argparse
+azure-cosmos
 azure-functions
-praw
-google-auth-httplib2
+bs4
 google-api-python-client
+google-auth-httplib2
 google-auth-oauthlib
 gspread
-requests
-argparse
-typing
 pathlib
-bs4
+praw
 python-dotenv
-azure-cosmos
+requests
+typing
