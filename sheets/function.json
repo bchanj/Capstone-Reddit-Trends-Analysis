@@ -1,20 +1,15 @@
 {
-  "scriptFile": "SheetsAzureFunctions.py",
+  "scriptFile": "__init__.py",
   "bindings": [
     {
-      "authLevel": "anonymous",
-      "type": "httpTrigger",
+      "type": "cosmosDBTrigger",
+      "name": "documents",
       "direction": "in",
-      "name": "req",
-      "methods": [
-        "get",
-        "post"
-      ]
-    },
-    {
-      "type": "http",
-      "direction": "out",
-      "name": "$return"
+      "leaseCollectionName": "leases",
+      "connectionStringSetting": "FUNCTIONS_WORKER_RUNTIME",
+      "databaseName": "Deals",
+      "collectionName": "gameDeals",
+      "createLeaseCollectionIfNotExists": true
     }
   ]
 }
