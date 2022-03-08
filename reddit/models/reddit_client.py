@@ -357,6 +357,7 @@ class RedditClient:
           for link in row.findAll('a'):
             if link.has_attr('href'):
                 deal.url = link['href']
+                break
           deal.date = date
           deal.merchant = merchant
           deal.bundle_title = bundle_title
@@ -462,3 +463,11 @@ class RedditClient:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    c = RedditClient()
+    # def parseSubmissionByBody(self,
+    #                           subreddit_target: SubredditTarget,
+    #                           submission: praw.models.Submission) -> List[Deal]:
+    sub = c.reddit.submission(id="rw0i1s")
+    print(c.parseSubmissionByBody(subreddit_target=SubredditTarget.GAMEDEALS, submission=sub))
+    # print(c.getDeals(SubredditTarget.GAMEDEALS))
+    
