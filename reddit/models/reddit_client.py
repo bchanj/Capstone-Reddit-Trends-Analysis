@@ -279,7 +279,7 @@ class RedditClient:
       
     def parseTableHtml(self,
                        subreddit_target: SubredditTarget,
-                       html:str,
+                       html: str,
                        url: str,
                        date: str,
                        submission_id: str,
@@ -347,24 +347,45 @@ class RedditClient:
       tables = soup.findAll('table')
       deal_index = 1
       headers = []
+
       for table in tables:
         headers = [ header.text for header in table.findAll('th')]
-        tvalues = [[ cell.text for cell in row.findAll('td')] for row in table.findAll('tr')][1:]
-        for row in tvalues:
+        for row in table.findAll('tr')[1:]:
           deal: GameDeal = GameDeal()
           deal.subreddit = subreddit
           deal.url = url
+          for link in row.findAll('a'):
+            if link.has_attr('href'):
+                deal.url = link['href']
           deal.date = date
           deal.merchant = merchant
           deal.bundle_title = bundle_title
           deal.bundle_id = submission_id
           deal.id = submission_id + '_' + str(deal_index)
           deal_index = deal_index + 1
-          for index, value in enumerate(row):
+          cell_content = [ cell.text for cell in row.findAll('td') ]
+          for index, value in enumerate(cell_content):
             # Use the table headers to look up Deal attribute with synonyms
             deal.setAttribute(headers[index], value)
           if deal.isValid():
             deals.append(deal)
+
+        # tvalues = [[ cell.text for cell in row.findAll('td')] for row in table.findAll('tr')][1:]
+        # for row in tvalues:
+        #   deal: GameDeal = GameDeal()
+        #   deal.subreddit = subreddit
+        #   deal.url = url
+        #   deal.date = date
+        #   deal.merchant = merchant
+        #   deal.bundle_title = bundle_title
+        #   deal.bundle_id = submission_id
+        #   deal.id = submission_id + '_' + str(deal_index)
+        #   deal_index = deal_index + 1
+        #   for index, value in enumerate(row):
+        #     # Use the table headers to look up Deal attribute with synonyms
+        #     deal.setAttribute(headers[index], value)
+        #   if deal.isValid():
+        #     deals.append(deal)
 
       if len(deals) == 0:
         raise DoesNotFollowRulesException("Unexpected Header Format: " + str(headers) + ' for the post titled: ' + title)
@@ -441,4 +462,3 @@ class RedditClient:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    
