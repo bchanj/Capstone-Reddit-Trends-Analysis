@@ -23,16 +23,6 @@ import json
 import logging
 
 import azure.functions as func
-
-if __name__ == "__main__":
-    client = RedditClient()
-    deals: List[Deal] = client.getDeals(
-      subreddit_target=SubredditTarget.GAMEDEALS, 
-      subreddit_type=SubredditFeedFilter.NEW,
-      limit=1000,
-    )
-    cosmos = CosmosClientWrapper()
-    cosmos.createEntries(deals)
     
 def main(mytimer: func.TimerRequest) -> None:
     utc_timestamp = datetime.datetime.utcnow().replace(
