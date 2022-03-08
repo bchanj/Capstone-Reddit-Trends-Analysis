@@ -55,7 +55,9 @@ class CosmosClientWrapper():
             SELECT * 
             FROM c
             {whereClause}
-            OFFSET {start} LIMIT {limit}'''
+            ORDER BY c.date DESC
+            OFFSET {start} LIMIT {limit}
+            '''
         for item in self._container.query_items(
         query=q,
         enable_cross_partition_query=True):
