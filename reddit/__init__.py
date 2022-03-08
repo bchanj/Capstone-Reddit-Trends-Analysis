@@ -29,7 +29,7 @@ if __name__ == "__main__":
     deals: List[Deal] = client.getDeals(
       subreddit_target=SubredditTarget.GAMEDEALS, 
       subreddit_type=SubredditFeedFilter.NEW,
-      limit=100,
+      limit=1000,
     )
     cosmos = CosmosClientWrapper()
     cosmos.createEntries(deals)
