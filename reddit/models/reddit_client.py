@@ -158,6 +158,8 @@ class RedditClient:
         'Rising Hell'
         >>> deals[1].discount
         '20%'
+        >>> True
+        False
 
         >>> deals = client.parseTitle('[Steam] Toge Productions Anniversary Sale 2022: Coffee Talk (%40)-- Free the people ($4,50):: Rising Hell (-20% 3,99$), Freedom Fighters (FREE) and More', 'abc', 'http://gamedeals', '2-21-2022', SubredditTarget.GAMEDEALS)
         >>> len(deals)
